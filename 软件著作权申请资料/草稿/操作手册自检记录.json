@@ -1,0 +1,42 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "action": "初稿生成",
+      "issues": []
+    },
+    {
+      "round": 2,
+      "action": "真实页面字段复核",
+      "issues": []
+    },
+    {
+      "round": 3,
+      "action": "制式模板和 AI 味复核",
+      "issues": []
+    },
+    {
+      "round": 4,
+      "action": "截图引用与占位复核",
+      "issues": [],
+      "inserted_screenshots": 10,
+      "remaining_placeholders": [
+        "遗址公园详情",
+        "登录与权限",
+        "数据管理与报告导入"
+      ]
+    },
+    {
+      "round": 5,
+      "action": "人工措辞复核",
+      "issues": [],
+      "changes": [
+        "改写重复页面模板句",
+        "删除异常数据通道措辞",
+        "修正不自然并列句",
+        "检查空泛宣传表达"
+      ]
+    }
+  ],
+  "module_count": 12
+}

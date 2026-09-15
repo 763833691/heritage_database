@@ -1,0 +1,30 @@
+schema_version: "1.0"
+status: approved_with_advisory
+development_mode:
+  value: cooperative_development
+  display_name: 合作开发
+  confirmation_status: confirmed
+copyright_holders:
+  count: 5
+  type: natural_person
+  names:
+    - 王新文
+    - 刘泽宇
+    - 张棪森
+    - 梅子阳
+    - 邱勇杰
+evidence:
+  - type: registration_detail_screenshot
+    status: provided
+    path: 软件著作权申请资料/权属证明/合作开发登记截图.png
+    supports:
+      - development_mode
+      - copyright_holder_count
+      - cooperation_contract_uploaded
+  - type: cooperation_development_contract
+    status: externally_attached
+    location: 软件登记系统
+    local_copy: not_found
+advisories:
+  - 提交时确认登记系统中的合作开发合同附件仍可打开。
+  - 建议将合同 PDF 原件复制到本地权属证明目录归档。

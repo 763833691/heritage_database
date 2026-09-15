@@ -1,0 +1,67 @@
+{
+  "status": "ok",
+  "method": "user-supplied",
+  "screenshots": [
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\01-ai_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\ai助手.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\02-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\关于我们.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\03-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\地图浏览.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\04-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\对比分析.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\05-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\文献计量.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\06-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\知识图谱.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\07-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\知识库.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\08-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\研究数据页.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\09-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\遗址公园列表页.png"
+    },
+    {
+      "route": "",
+      "url": "",
+      "path": "H:\\my_code\\datak\\软件著作权申请资料\\截图\\10-_.png",
+      "source": "H:\\my_code\\datak\\image\\页面截图\\首页.png"
+    }
+  ],
+  "errors": []
+}

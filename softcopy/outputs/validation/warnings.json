@@ -1,0 +1,14 @@
+[
+  {
+    "code": "LOCAL_CONTRACT_COPY_MISSING",
+    "severity": "advisory",
+    "message": "登记截图显示合作开发合同已上传，但本地材料包未发现合同 PDF 原件。",
+    "action": "提交前确认登记系统附件有效，并建议保存本地副本。"
+  },
+  {
+    "code": "XSD_TOOL_LIMITATION",
+    "severity": "informational",
+    "message": "DOCX Toolkit 简化 XSD 未声明标准关系属性 r:id；已使用业务规则校验和 LibreOffice 渲染替代。",
+    "action": "无需修改文档。"
+  }
+]

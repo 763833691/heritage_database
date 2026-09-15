@@ -1,0 +1,724 @@
+{
+  "project_root": "H:\\my_code\\datak",
+  "selection_required": true,
+  "model_selection_required": true,
+  "confirmation_required": true,
+  "user_confirmed": true,
+  "target_pages": 60,
+  "lines_per_page": 50,
+  "target_lines": 3000,
+  "estimated_selected_lines": 3129,
+  "estimated_selected_pages": 63,
+  "estimated_all_candidate_lines": 9647,
+  "estimated_all_candidate_pages": 193,
+  "supplement_rule": "模型优先选择能体现软件核心功能和真实运行逻辑的源码；不足60页时再从其他相关源码中补充；候选源码仍不足时才生成全部代码材料。",
+  "confirmation_stage": "code-selection",
+  "next_action": "请由模型填写 草稿/代码文件选择.json 的抽取选择和选择理由，再让用户确认；确认后运行 confirm_stage.py --stage code-selection。",
+  "instructions": "The script only inventories source files. The model must choose selected/model_reason before user confirmation. Selected files are copied in full.",
+  "files": [
+    {
+      "path": "frontend/src/App.vue",
+      "selected": false,
+      "line_count": 1,
+      "priority": 0,
+      "selection_tier": "frontend",
+      "evidence": "入口文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/main.js",
+      "selected": true,
+      "line_count": 24,
+      "priority": 0,
+      "selection_tier": "frontend",
+      "evidence": "入口文件证据",
+      "model_reason": "前端启动入口，体现 Vue 应用、路由、状态管理和 Element Plus 的实际装配过程。"
+    },
+    {
+      "path": "frontend/src/router/index.js",
+      "selected": true,
+      "line_count": 48,
+      "priority": 10,
+      "selection_tier": "frontend",
+      "evidence": "路由文件证据",
+      "model_reason": "集中定义首页、研究数据、公园、地图、对比、图谱、智能助手、知识库和管理端等真实业务入口。"
+    },
+    {
+      "path": "backend/app/__init__.py",
+      "selected": false,
+      "line_count": 1,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/api/__init__.py",
+      "selected": false,
+      "line_count": 17,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/api/admin.py",
+      "selected": false,
+      "line_count": 676,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/api/auth.py",
+      "selected": false,
+      "line_count": 84,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/api/chat.py",
+      "selected": true,
+      "line_count": 184,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": "实现智能问答、会话历史和回答结果接口，直接对应平台智能阐释功能。"
+    },
+    {
+      "path": "backend/app/api/kg.py",
+      "selected": true,
+      "line_count": 266,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": "实现知识图谱统计、实体、邻居和搜索，并包含 Neo4j 未启用时的关系库降级逻辑。"
+    },
+    {
+      "path": "backend/app/api/knowledge.py",
+      "selected": true,
+      "line_count": 629,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": "覆盖文献上传、检索、引用、知识关联、综述和文献计量，是文化遗产知识服务的核心接口。"
+    },
+    {
+      "path": "backend/app/api/parks.py",
+      "selected": true,
+      "line_count": 135,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": "实现遗址公园筛选、详情、遗址点和评分查询，支撑公园档案与地图展示。"
+    },
+    {
+      "path": "backend/app/api/statistics.py",
+      "selected": true,
+      "line_count": 162,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": "实现总体统计、评价维度、雷达图和跨园比较数据，直接体现文化价值量化分析。"
+    },
+    {
+      "path": "backend/app/core/auth.py",
+      "selected": false,
+      "line_count": 80,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/core/config.py",
+      "selected": false,
+      "line_count": 80,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/core/database.py",
+      "selected": false,
+      "line_count": 99,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/main.py",
+      "selected": false,
+      "line_count": 56,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/__init__.py",
+      "selected": false,
+      "line_count": 30,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/community.py",
+      "selected": false,
+      "line_count": 18,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/education.py",
+      "selected": false,
+      "line_count": 20,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/exhibition.py",
+      "selected": false,
+      "line_count": 44,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/indicator.py",
+      "selected": false,
+      "line_count": 19,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/literature.py",
+      "selected": false,
+      "line_count": 67,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/location.py",
+      "selected": false,
+      "line_count": 39,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/park.py",
+      "selected": false,
+      "line_count": 53,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/review.py",
+      "selected": false,
+      "line_count": 20,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/score.py",
+      "selected": false,
+      "line_count": 20,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/site.py",
+      "selected": false,
+      "line_count": 22,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/survey.py",
+      "selected": false,
+      "line_count": 40,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/models/user.py",
+      "selected": false,
+      "line_count": 17,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/schemas/__init__.py",
+      "selected": false,
+      "line_count": 9,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/schemas/chat.py",
+      "selected": false,
+      "line_count": 28,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/schemas/park.py",
+      "selected": false,
+      "line_count": 76,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/schemas/user.py",
+      "selected": false,
+      "line_count": 34,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/__init__.py",
+      "selected": false,
+      "line_count": 1,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/bibliometrics.py",
+      "selected": false,
+      "line_count": 198,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/doc_parser.py",
+      "selected": false,
+      "line_count": 336,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/kb_indexer.py",
+      "selected": false,
+      "line_count": 345,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/kb_lint.py",
+      "selected": false,
+      "line_count": 182,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/kb_processor.py",
+      "selected": false,
+      "line_count": 184,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/llm_provider.py",
+      "selected": false,
+      "line_count": 261,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/prompt_builder.py",
+      "selected": false,
+      "line_count": 110,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/app/services/rag_engine.py",
+      "selected": true,
+      "line_count": 361,
+      "priority": 20,
+      "selection_tier": "supplement",
+      "evidence": "页面文件证据",
+      "model_reason": "实现基于公园数据和知识上下文的检索增强问答、意图识别及对比图表数据组织。"
+    },
+    {
+      "path": "frontend/src/views/About.vue",
+      "selected": false,
+      "line_count": 22,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/views/admin/DataManage.vue",
+      "selected": true,
+      "line_count": 461,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "完整呈现公园、遗址点、评分、用户和导入管理的界面流程与权限反馈。"
+    },
+    {
+      "path": "frontend/src/views/admin/ReportImport.vue",
+      "selected": true,
+      "line_count": 257,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "体现调研报告上传、解析预览、条目修订和确认入库的真实操作流程。"
+    },
+    {
+      "path": "frontend/src/views/Comparison.vue",
+      "selected": true,
+      "line_count": 78,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "实现二至五个遗址公园选择、维度雷达图、指标柱状图和结果表格。"
+    },
+    {
+      "path": "frontend/src/views/Dashboard.vue",
+      "selected": true,
+      "line_count": 179,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "门户首页汇聚真实统计、研究入口和公园精选，体现平台面向研究用户的总体定位。"
+    },
+    {
+      "path": "frontend/src/views/KnowledgeBase.vue",
+      "selected": false,
+      "line_count": 74,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/views/Layout.vue",
+      "selected": false,
+      "line_count": 69,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/views/Login.vue",
+      "selected": false,
+      "line_count": 21,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/views/MapView.vue",
+      "selected": true,
+      "line_count": 136,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "实现公园空间筛选、地图点位、详情联动、分享和地图服务异常提示。"
+    },
+    {
+      "path": "frontend/src/views/ParkDetail.vue",
+      "selected": true,
+      "line_count": 52,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "展示单个公园档案、评分、评价雷达图和遗址点信息，是单园研究的核心页面。"
+    },
+    {
+      "path": "frontend/src/views/ResearchData.vue",
+      "selected": true,
+      "line_count": 127,
+      "priority": 20,
+      "selection_tier": "frontend",
+      "evidence": "页面文件证据",
+      "model_reason": "展示总览、类型、区域和评价维度的真实图表及数据洞察，体现研究数据可视化。"
+    },
+    {
+      "path": "frontend/src/stores/auth.js",
+      "selected": false,
+      "line_count": 36,
+      "priority": 40,
+      "selection_tier": "frontend",
+      "evidence": "状态或数据文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/components/ChatMessage.vue",
+      "selected": false,
+      "line_count": 211,
+      "priority": 50,
+      "selection_tier": "frontend",
+      "evidence": "页面组成文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/components/common/StatusState.vue",
+      "selected": false,
+      "line_count": 33,
+      "priority": 50,
+      "selection_tier": "frontend",
+      "evidence": "页面组成文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/components/park/ParkFormDialog.vue",
+      "selected": false,
+      "line_count": 174,
+      "priority": 50,
+      "selection_tier": "frontend",
+      "evidence": "页面组成文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/components/portal/PageHero.vue",
+      "selected": false,
+      "line_count": 25,
+      "priority": 50,
+      "selection_tier": "frontend",
+      "evidence": "页面组成文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/components/portal/PortalFooter.vue",
+      "selected": false,
+      "line_count": 42,
+      "priority": 50,
+      "selection_tier": "frontend",
+      "evidence": "页面组成文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/components/portal/PortalHeader.vue",
+      "selected": false,
+      "line_count": 238,
+      "priority": 50,
+      "selection_tier": "frontend",
+      "evidence": "页面组成文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/utils/api.js",
+      "selected": false,
+      "line_count": 58,
+      "priority": 60,
+      "selection_tier": "frontend",
+      "evidence": "通用能力文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/utils/markdown.js",
+      "selected": false,
+      "line_count": 29,
+      "priority": 60,
+      "selection_tier": "frontend",
+      "evidence": "通用能力文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/utils/sse.js",
+      "selected": false,
+      "line_count": 67,
+      "priority": 60,
+      "selection_tier": "frontend",
+      "evidence": "通用能力文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/index.html",
+      "selected": false,
+      "line_count": 12,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/config/app.js",
+      "selected": false,
+      "line_count": 6,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/config/navigation.js",
+      "selected": false,
+      "line_count": 18,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/features/map/coordinates.js",
+      "selected": false,
+      "line_count": 43,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/features/map/coordinates.test.js",
+      "selected": false,
+      "line_count": 20,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/features/map/parkPointAdapter.js",
+      "selected": false,
+      "line_count": 25,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/features/map/provider/AMapProvider.js",
+      "selected": false,
+      "line_count": 151,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/tests/e2e/portal.spec.js",
+      "selected": false,
+      "line_count": 78,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "wenxian/国家考古遗址公园相关文献/相关文献目录.files/js.js",
+      "selected": false,
+      "line_count": 154,
+      "priority": 80,
+      "selection_tier": "frontend",
+      "evidence": "普通源码文件",
+      "model_reason": ""
+    },
+    {
+      "path": "frontend/src/assets/styles/main.scss",
+      "selected": false,
+      "line_count": 162,
+      "priority": 90,
+      "selection_tier": "frontend",
+      "evidence": "样式文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "wenxian/国家考古遗址公园相关文献/相关文献目录.files/stylesheet.css",
+      "selected": false,
+      "line_count": 550,
+      "priority": 90,
+      "selection_tier": "frontend",
+      "evidence": "样式文件证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/scripts/build_kg.py",
+      "selected": false,
+      "line_count": 379,
+      "priority": 100,
+      "selection_tier": "supplement",
+      "evidence": "补充源码证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/scripts/create_templates.py",
+      "selected": false,
+      "line_count": 66,
+      "priority": 100,
+      "selection_tier": "supplement",
+      "evidence": "补充源码证据",
+      "model_reason": ""
+    },
+    {
+      "path": "backend/scripts/init_db.py",
+      "selected": false,
+      "line_count": 252,
+      "priority": 100,
+      "selection_tier": "supplement",
+      "evidence": "补充源码证据",
+      "model_reason": ""
+    },
+    {
+      "path": "start.sh",
+      "selected": false,
+      "line_count": 110,
+      "priority": 100,
+      "selection_tier": "supplement",
+      "evidence": "补充源码证据",
+      "model_reason": ""
+    }
+  ],
+  "confirmation_note": "用户确认模型选择的15个完整真实源码文件，预计3129行、63页，覆盖主要业务功能。",
+  "confirmed_at": "2026-07-27T03:08:39+00:00"
+}

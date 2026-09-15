@@ -1,0 +1,11 @@
+{
+  "source_material_lines": 2979,
+  "front_selected_lines": 1511,
+  "back_selected_lines": 1015,
+  "omitted_middle_lines": 453,
+  "front_rendered_pages": 30,
+  "back_rendered_pages": 30,
+  "code_font_size_pt": 8.0,
+  "source_text_changed": false,
+  "note": "仅取消草稿中的预设分页，按LibreOffice物理页重新截取已确认代码的首30页和末30页。"
+}

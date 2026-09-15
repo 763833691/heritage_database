@@ -1,0 +1,40 @@
+{
+  "name": "heritage-park-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "lint": "eslint \"src/**/*.{js,vue}\" \"tests/**/*.js\"",
+    "typecheck": "vue-tsc --noEmit -p jsconfig.json",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.6.2",
+    "echarts": "^5.4.3",
+    "element-plus": "^2.4.3",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.2.0",
+    "pinia": "^2.1.7",
+    "vue": "^3.3.8",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@vitejs/plugin-vue": "^4.5.1",
+    "eslint": "^10.7.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "globals": "^17.7.0",
+    "sass": "^1.69.5",
+    "typescript": "^5.9.3",
+    "vite": "^5.0.4",
+    "vitest": "^4.1.10",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "^3.3.7"
+  }
+}

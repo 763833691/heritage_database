@@ -1,0 +1,159 @@
+{
+  "software_name": "考古遗址公园文化价值智能数字化阐释平台",
+  "version": "V1.0",
+  "project_root": "H:\\my_code\\datak",
+  "file_count": 15,
+  "material_line_count": 3129,
+  "source_line_count": 3099,
+  "selected_source_line_count": 3099,
+  "lines_per_page": 50,
+  "total_pages": 63,
+  "target_pages": 60,
+  "available_candidate_line_count": 9647,
+  "available_candidate_pages": 193,
+  "supplement_status": "候选源码可达到前30页/后30页要求",
+  "mode": "front30_back30",
+  "selection_file": "H:\\my_code\\datak\\软件著作权申请资料\\草稿\\代码文件选择.json",
+  "outputs": [
+    "代码-前30页.md",
+    "代码-后30页.md"
+  ],
+  "files": [
+    {
+      "path": "frontend/src/main.js",
+      "source_line_count": 24,
+      "selected_line_start": 1,
+      "selected_line_end": 24,
+      "selected_line_count": 24,
+      "material_line_start": 1,
+      "material_line_end": 26
+    },
+    {
+      "path": "frontend/src/router/index.js",
+      "source_line_count": 48,
+      "selected_line_start": 1,
+      "selected_line_end": 48,
+      "selected_line_count": 48,
+      "material_line_start": 27,
+      "material_line_end": 76
+    },
+    {
+      "path": "backend/app/api/chat.py",
+      "source_line_count": 184,
+      "selected_line_start": 1,
+      "selected_line_end": 184,
+      "selected_line_count": 184,
+      "material_line_start": 77,
+      "material_line_end": 262
+    },
+    {
+      "path": "backend/app/api/kg.py",
+      "source_line_count": 266,
+      "selected_line_start": 1,
+      "selected_line_end": 266,
+      "selected_line_count": 266,
+      "material_line_start": 263,
+      "material_line_end": 530
+    },
+    {
+      "path": "backend/app/api/knowledge.py",
+      "source_line_count": 629,
+      "selected_line_start": 1,
+      "selected_line_end": 629,
+      "selected_line_count": 629,
+      "material_line_start": 531,
+      "material_line_end": 1161
+    },
+    {
+      "path": "backend/app/api/parks.py",
+      "source_line_count": 135,
+      "selected_line_start": 1,
+      "selected_line_end": 135,
+      "selected_line_count": 135,
+      "material_line_start": 1162,
+      "material_line_end": 1298
+    },
+    {
+      "path": "backend/app/api/statistics.py",
+      "source_line_count": 162,
+      "selected_line_start": 1,
+      "selected_line_end": 162,
+      "selected_line_count": 162,
+      "material_line_start": 1299,
+      "material_line_end": 1462
+    },
+    {
+      "path": "backend/app/services/rag_engine.py",
+      "source_line_count": 361,
+      "selected_line_start": 1,
+      "selected_line_end": 361,
+      "selected_line_count": 361,
+      "material_line_start": 1463,
+      "material_line_end": 1825
+    },
+    {
+      "path": "frontend/src/views/admin/DataManage.vue",
+      "source_line_count": 461,
+      "selected_line_start": 1,
+      "selected_line_end": 461,
+      "selected_line_count": 461,
+      "material_line_start": 1826,
+      "material_line_end": 2288
+    },
+    {
+      "path": "frontend/src/views/admin/ReportImport.vue",
+      "source_line_count": 257,
+      "selected_line_start": 1,
+      "selected_line_end": 257,
+      "selected_line_count": 257,
+      "material_line_start": 2289,
+      "material_line_end": 2547
+    },
+    {
+      "path": "frontend/src/views/Comparison.vue",
+      "source_line_count": 78,
+      "selected_line_start": 1,
+      "selected_line_end": 78,
+      "selected_line_count": 78,
+      "material_line_start": 2548,
+      "material_line_end": 2627
+    },
+    {
+      "path": "frontend/src/views/Dashboard.vue",
+      "source_line_count": 179,
+      "selected_line_start": 1,
+      "selected_line_end": 179,
+      "selected_line_count": 179,
+      "material_line_start": 2628,
+      "material_line_end": 2808
+    },
+    {
+      "path": "frontend/src/views/MapView.vue",
+      "source_line_count": 136,
+      "selected_line_start": 1,
+      "selected_line_end": 136,
+      "selected_line_count": 136,
+      "material_line_start": 2809,
+      "material_line_end": 2946
+    },
+    {
+      "path": "frontend/src/views/ParkDetail.vue",
+      "source_line_count": 52,
+      "selected_line_start": 1,
+      "selected_line_end": 52,
+      "selected_line_count": 52,
+      "material_line_start": 2947,
+      "material_line_end": 3000
+    },
+    {
+      "path": "frontend/src/views/ResearchData.vue",
+      "source_line_count": 127,
+      "selected_line_start": 1,
+      "selected_line_end": 127,
+      "selected_line_count": 127,
+      "material_line_start": 3001,
+      "material_line_end": 3129
+    }
+  ],
+  "safe_software_filename": "考古遗址公园文化价值智能数字化阐释平台"
+}

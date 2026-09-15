@@ -1,0 +1,5 @@
+{
+  "environment_confirmed": true,
+  "confirmation_note": "用户选择安装完整 DOCX 环境；已使用 Windows setup.ps1 -Minimal 构建并通过 OpenXML DOCX 创建验证。.NET SDK 8.0.400 可用，Pandoc 为可选且未安装，LibreOffice 已安装。check_environment.py 因固定调用 bash 在 Windows 上误报。",
+  "confirmed_at": "2026-07-27T02:49:34+00:00"
+}

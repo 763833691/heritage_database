@@ -1,0 +1,52 @@
+<template>
+  <div class="page-shell park-detail-page">
+    <StatusState v-if="loading" type="loading" title="正在加载公园详情" />
+    <StatusState v-else-if="error" type="error" title="公园详情加载失败" :description="error" action-label="返回列表" @action="$router.push('/parks')" />
+    <template v-else-if="park">
+      <section class="detail-hero section-card">
+        <img :src="parkCover" :alt="`${park.short_name || park.name}主题封面`" />
+        <div class="detail-hero__overlay"></div>
+        <div class="detail-hero__content"><button type="button" class="back-button" @click="$router.back()"><el-icon><ArrowLeft /></el-icon>返回</button><div class="detail-hero__tags"><span v-if="park.batch">第{{ park.batch }}批</span><span>{{ park.park_type || '类型未录入' }}</span><span v-if="park.world_heritage">世界遗产</span></div><h1>{{ park.name }}</h1><p><el-icon><Location /></el-icon>{{ park.province }} {{ park.city }} {{ park.district || '' }}</p><div class="detail-hero__actions"><el-button type="primary" @click="openMap">在地图中查看</el-button><el-button plain @click="addToCompare">加入对比</el-button></div></div>
+      </section>
+
+      <div class="portal-stat-grid detail-stats">
+        <div class="portal-stat-card"><span class="portal-stat-card__icon"><el-icon><DataAnalysis /></el-icon></span><div><div class="portal-stat-card__label">综合均分</div><div class="portal-stat-card__value">{{ averageScore }}</div><div class="portal-stat-card__meta">按已录入指标计算</div></div></div>
+        <div class="portal-stat-card"><span class="portal-stat-card__icon green"><el-icon><MapLocation /></el-icon></span><div><div class="portal-stat-card__label">总面积</div><div class="portal-stat-card__value">{{ park.total_area ?? '—' }}</div><div class="portal-stat-card__meta">平方公里</div></div></div>
+        <div class="portal-stat-card"><span class="portal-stat-card__icon violet"><el-icon><Calendar /></el-icon></span><div><div class="portal-stat-card__label">开园年份</div><div class="portal-stat-card__value">{{ park.open_year || '—' }}</div><div class="portal-stat-card__meta">数据未录入时显示空值</div></div></div>
+        <div class="portal-stat-card"><span class="portal-stat-card__icon orange"><el-icon><Location /></el-icon></span><div><div class="portal-stat-card__label">遗址点</div><div class="portal-stat-card__value">{{ sites.length }}</div><div class="portal-stat-card__meta">当前关联记录</div></div></div>
+      </div>
+
+      <section class="detail-grid">
+        <article class="section-card detail-copy"><div class="section-card__header"><div><h2>公园简介</h2><p>基础档案与保护信息。</p></div></div><p v-if="park.description">{{ park.description }}</p><StatusState v-else type="empty" title="暂无公园简介" description="当前数据库尚未录入相关文字介绍。" /><dl><div><dt>公园类型</dt><dd>{{ park.park_type || '—' }}</dd></div><div><dt>评定批次</dt><dd>{{ park.batch ? `第${park.batch}批` : '—' }}</dd></div><div><dt>景区等级</dt><dd>{{ park.aaa_level || '—' }}</dd></div><div><dt>世界遗产</dt><dd>{{ park.world_heritage ? '是' : '否' }}</dd></div><div><dt>经纬度（数据库）</dt><dd>{{ coordinateText }}</dd></div><div><dt>核心保护区面积</dt><dd>{{ park.core_area ?? '—' }}</dd></div></dl></article>
+        <article class="chart-card"><div class="section-card__header"><div><h2>文化效能评估</h2><p>基于真实评分记录的维度均值。</p></div></div><div v-if="scores.length" ref="radarRef" class="chart-canvas tall"></div><StatusState v-else type="empty" title="暂无评价数据" /></article>
+      </section>
+
+      <section class="section-card score-section"><div class="section-card__header"><div><h2>评价指标明细</h2><p>展示指标编号、维度、得分等级与现有依据。</p></div></div><div class="table-scroll"><el-table v-if="scores.length" :data="scores" stripe><el-table-column prop="code" label="编号" width="90"/><el-table-column prop="name" label="指标名称" min-width="190"/><el-table-column prop="dimension" label="维度" width="140"/><el-table-column prop="score" label="得分" width="90"><template #default="{row}"><strong class="score-value">{{ row.score ?? '—' }}</strong></template></el-table-column><el-table-column prop="grade" label="等级" width="100"><template #default="{row}"><el-tag :type="gradeType(row.grade)">{{ row.grade || '—' }}</el-tag></template></el-table-column><el-table-column prop="evidence" label="评分依据" min-width="280"><template #default="{row}">{{ row.evidence || '暂未录入' }}</template></el-table-column></el-table><StatusState v-else type="empty" title="暂无评分明细" /></div></section>
+
+      <section class="detail-bottom-grid">
+        <article class="section-card"><div class="section-card__header"><div><h2>遗址构成</h2><p>当前关联遗址点。</p></div></div><div v-if="sites.length" class="site-list"><div v-for="site in sites" :key="site.id"><strong>{{ site.site_name }}</strong><span>{{ site.site_type || '类型未录入' }} · {{ site.period || '时期未录入' }}</span><p>{{ site.description || '暂无简介' }}</p></div></div><StatusState v-else type="empty" title="暂无遗址点记录" description="当前数据库没有关联到该公园的遗址点。" /></article>
+        <article class="section-card location-card"><div class="section-card__header"><div><h2>地图位置</h2><p>坐标由地图适配层统一转换并渲染。</p></div></div><div class="coordinate-panel"><span><el-icon><MapLocation /></el-icon></span><div><strong>{{ park.province }} {{ park.city }}</strong><p>{{ coordinateText }}</p></div></div><el-button type="primary" plain :disabled="!park.longitude || !park.latitude" @click="openMap">打开专题地图</el-button></article>
+      </section>
+    </template>
+  </div>
+</template>
+
+<script setup>
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import * as echarts from 'echarts'
+import api from '@/utils/api'
+import StatusState from '@/components/common/StatusState.vue'
+import parkCover from '@/assets/images/park-cover-fallback.webp'
+const route=useRoute();const router=useRouter();const park=ref(null);const scores=ref([]);const sites=ref([]);const loading=ref(true);const error=ref('');const radarRef=ref();let chart;let observer
+const averageScore=computed(()=>{const values=scores.value.map(s=>Number(s.score)).filter(Number.isFinite);return values.length?(values.reduce((a,b)=>a+b,0)/values.length).toFixed(1):'—'})
+const coordinateText=computed(()=>park.value?.longitude&&park.value?.latitude?`${park.value.longitude.toFixed(4)}, ${park.value.latitude.toFixed(4)}（WGS84）`:'暂无坐标')
+onMounted(loadDetail);onBeforeUnmount(()=>{observer?.disconnect();chart?.dispose()})
+async function loadDetail(){loading.value=true;try{const [parkRes,scoreRes,siteRes]=await Promise.all([api.get(`/parks/${route.params.id}`,{silent:true}),api.get(`/parks/${route.params.id}/scores`,{silent:true}),api.get(`/parks/${route.params.id}/sites`,{silent:true})]);park.value=parkRes.data;scores.value=scoreRes.data||[];sites.value=siteRes.data||[];await nextTick();renderRadar()}catch(e){error.value=e.response?.data?.detail||'请检查公园编号或后端服务。'}finally{loading.value=false}}
+function renderRadar(){if(!radarRef.value||!scores.value.length)return;const dims=[...new Set(scores.value.map(s=>s.dimension))];const values=dims.map(dim=>{const items=scores.value.filter(s=>s.dimension===dim).map(s=>Number(s.score)).filter(Number.isFinite);return items.length?Math.round(items.reduce((a,b)=>a+b,0)/items.length):0});chart=echarts.init(radarRef.value);chart.setOption({color:['#2563eb'],tooltip:{},radar:{indicator:dims.map(name=>({name,max:100})),splitArea:{areaStyle:{color:['#fff','#f8fbff']}},splitLine:{lineStyle:{color:'#dbe5f2'}},axisLine:{lineStyle:{color:'#dbe5f2'}}},series:[{type:'radar',data:[{name:park.value.short_name||park.value.name,value:values,areaStyle:{color:'rgba(37,99,235,.16)'},lineStyle:{width:2}}]}]});observer=new ResizeObserver(()=>chart?.resize());observer.observe(radarRef.value)}
+function openMap(){router.push({path:'/map',query:{selected:String(park.value.id)}})}function addToCompare(){router.push({path:'/compare',query:{park_ids:String(park.value.id)}})}function gradeType(grade){return {'好':'success','较好':'primary','一般':'warning','较差':'danger','差':'danger'}[grade]||'info'}
+</script>
+
+<style scoped lang="scss">
+.detail-hero{min-height:410px;position:relative;overflow:hidden;color:#fff}.detail-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.detail-hero__overlay{position:absolute;inset:0;background:rgba(12,30,56,.62)}.detail-hero__content{min-height:410px;padding:38px;position:relative;z-index:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start}.back-button{position:absolute;left:34px;top:28px;display:flex;align-items:center;gap:5px;border:0;background:none;color:#fff;cursor:pointer}.detail-hero__tags{display:flex;gap:8px}.detail-hero__tags span{padding:6px 10px;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(255,255,255,.12);font-size:11px}.detail-hero h1{max-width:850px;margin:14px 0 10px;font-size:clamp(32px,4vw,48px);line-height:1.18}.detail-hero__content>p{display:flex;align-items:center;gap:6px;opacity:.86}.detail-hero__actions{display:flex;gap:10px;margin-top:20px}.detail-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px}.detail-copy,.score-section,.detail-bottom-grid>.section-card{padding:24px}.detail-copy>p{margin:0 0 20px;color:var(--text-secondary);font-size:14px;line-height:1.9}.detail-copy dl{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)}.detail-copy dl>div{padding:14px 0;border-bottom:1px solid var(--border)}.detail-copy dt{color:var(--text-tertiary);font-size:11px}.detail-copy dd{margin:5px 0 0;font-size:13px;font-weight:600}.table-scroll{overflow-x:auto}.score-value{color:var(--brand-600)}.detail-bottom-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.site-list{display:grid;gap:10px}.site-list>div{padding:14px;border:1px solid var(--border);border-radius:12px}.site-list span{margin-left:10px;color:var(--text-tertiary);font-size:11px}.site-list p{margin:7px 0 0;color:var(--text-secondary);font-size:12px}.coordinate-panel{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:20px;border-radius:14px;background:var(--brand-50)}.coordinate-panel>span{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;color:#fff;background:var(--brand-600);font-size:21px}.coordinate-panel p{margin:6px 0 0;color:var(--text-secondary);font-size:12px}@media(max-width:900px){.detail-grid,.detail-bottom-grid{grid-template-columns:1fr}}@media(max-width:640px){.detail-hero,.detail-hero__content{min-height:470px}.detail-hero__content{padding:24px}.back-button{left:22px;top:22px}.detail-copy dl{grid-template-columns:1fr}.detail-hero__actions{width:100%}.detail-hero__actions>*{flex:1}}
+</style>
