@@ -1,5 +1,9 @@
-from pydantic_settings import BaseSettings
+from pathlib import Path
 from typing import Optional
+
+from pydantic_settings import BaseSettings
+
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -30,6 +34,103 @@ class Settings(BaseSettings):
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "heritage123"
+    NEO4J_DATABASE: str = "neo4j"
+
+    # ===== 知识图谱子系统（文件库 / 文本解析 / 图谱构建）=====
+    KG_STORAGE_DIR: str = "./data/kg"
+    KG_MAX_UPLOAD_MB: int = 200
+    KG_MOCK_GRAPH: bool = False
+
+    # 扫描件 PDF OCR（可选，需 pymupdf + Pillow）
+    SCANNED_PDF_ZOOM: float = 2.0
+    SCANNED_PDF_MAX_PAGES: int = 0
+    SCANNED_PDF_MIN_CHARS_PER_PAGE: float = 30.0
+    SCANNED_PDF_TIMEOUT_SECONDS: int = 120
+
+    # 语音转写：腾讯云录音文件识别极速版（FlashRecognizer）
+    TENCENT_APP_ID: str = ""
+    TENCENT_SECRET_ID: str = ""
+    TENCENT_SECRET_KEY: str = ""
+    ASR_ENGINE_TYPE: str = "16k_zh"
+    ASR_MAX_UPLOAD_MB: int = 20
+
+    @property
+    def storage_dir(self) -> Path:
+        """知识图谱子系统的数据根目录（绝对路径）。"""
+        path = Path(self.KG_STORAGE_DIR)
+        return path if path.is_absolute() else _BACKEND_DIR / path
+
+    @property
+    def upload_dir(self) -> Path:
+        return self.storage_dir / "uploads"
+
+    @property
+    def state_file(self) -> Path:
+        return self.storage_dir / "state.json"
+
+    @property
+    def max_upload_size(self) -> int:
+        return self.KG_MAX_UPLOAD_MB * 1024 * 1024
+
+    @property
+    def mock_graph_enabled(self) -> bool:
+        return self.KG_MOCK_GRAPH
+
+    @property
+    def neo4j_enabled(self) -> bool:
+        return self.NEO4J_ENABLED
+
+    @property
+    def neo4j_uri(self) -> str:
+        return self.NEO4J_URI
+
+    @property
+    def neo4j_user(self) -> str:
+        return self.NEO4J_USER
+
+    @property
+    def neo4j_password(self) -> str:
+        return self.NEO4J_PASSWORD
+
+    @property
+    def neo4j_database(self) -> str:
+        return self.NEO4J_DATABASE
+
+    @property
+    def openai_api_key(self) -> Optional[str]:
+        return self.OPENAI_API_KEY or self.DASHSCOPE_API_KEY or None
+
+    @property
+    def openai_base_url(self) -> str:
+        return self.LLM_BASE_URL or "https://api.openai.com/v1"
+
+    @property
+    def openai_model(self) -> str:
+        return self.AI_MODEL
+
+    @property
+    def openai_vision_model(self) -> str:
+        return self.AI_MODEL
+
+    @property
+    def scanned_pdf_zoom(self) -> float:
+        return self.SCANNED_PDF_ZOOM
+
+    @property
+    def scanned_pdf_max_pages(self) -> Optional[int]:
+        return self.SCANNED_PDF_MAX_PAGES or None
+
+    @property
+    def scanned_pdf_min_chars_per_page(self) -> float:
+        return self.SCANNED_PDF_MIN_CHARS_PER_PAGE
+
+    @property
+    def scanned_pdf_timeout_seconds(self) -> int:
+        return self.SCANNED_PDF_TIMEOUT_SECONDS
+
+    @property
+    def asr_max_upload_size(self) -> int:
+        return self.ASR_MAX_UPLOAD_MB * 1024 * 1024
 
     # AI配置
     AI_PROVIDER: str = "mock"  # dashscope / openai / mock

@@ -7,6 +7,7 @@
 - 调研数据管理：遗址公园、遗址点、评分、问卷、评论等结构化存储
 - 数据分析：总览统计、分类型/分省份分布、维度对比、雷达图展示
 - 知识图谱：基于关系数据库数据构建 Neo4j 图谱，支持实体、邻居和搜索
+- 知识图谱系统（文献驱动）：文件库管理 → 文本解析（PDF/CAJ/TXT，可选扫描件 OCR）→ 实体关系抽取 → 3D 语义图谱探索，并支持语音转写
 - AI 问答：基于 RAG 的问答流程，支持对比、统计、列表类问题
 - 运维部署：支持本地开发和 Docker Compose 部署
 
@@ -14,7 +15,7 @@
 
 | 层级 | 技术 |
 |------|------|
-| 前端 | Vue 3、Element Plus、ECharts、Leaflet |
+| 前端 | Vue 3、Element Plus、ECharts、Leaflet、Three.js（3D 知识图谱） |
 | 后端 | FastAPI、SQLAlchemy、Pydantic |
 | 数据库 | PostgreSQL / SQLite（本地默认） |
 | 图数据库 | Neo4j（可选） |
@@ -116,12 +117,51 @@ npm run dev
 - `DASHSCOPE_API_KEY`
 - `OPENAI_API_KEY`
 - `SECRET_KEY`
+- `KG_STORAGE_DIR`：知识图谱子系统数据目录（默认 `backend/data/kg`）
+- `KG_MAX_UPLOAD_MB`：文件库单文件上传上限（默认 200）
+- `TENCENT_APP_ID` / `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`：腾讯云语音转写密钥
 
 说明：
 
 - 当前仓库默认支持 SQLite 本地模式，Docker 部署时推荐 PostgreSQL。
 - 知识图谱构建和 Neo4j 查询需要显式开启 `NEO4J_ENABLED=true`。
 - 现有 `RAGEngine` 仍以本地规则式回答为主，AI 密钥更偏向预留扩展配置。
+- 知识图谱子系统的文件库、处理状态与图谱数据默认使用本地 JSON 存储
+  （`backend/data/kg/state.json`、`graph.json`），开启 `NEO4J_ENABLED=true` 后写入 Neo4j。
+
+## 知识图谱系统
+
+由「文件库 → 处理流程 → 3D 知识图谱」三步构成，前端入口位于顶部导航：
+
+1. **文件库**（`/kg/vault`）：上传/分类/检索资料，支持批量处理与语音转写。
+2. **处理流程**（`/kg/processing`）：文本解析 → 人工确认 → 图谱构建 → 结果导出，
+   支持单文件与批量队列，处理中断后重启可自动恢复。
+3. **知识图谱**（`/knowledge-graph`）：Three.js 3D 语义图谱，提供 J-space 点云与
+   Jarvis 3D 两种主题、四种布局算法、文献分球、展示方案预设与节点详情。
+
+后端接口前缀：
+
+| 前缀 | 说明 |
+|------|------|
+| `/api/file` | 文件库、分类、上传 |
+| `/api/process` | 文本解析、确认、图谱构建、导出、批量队列 |
+| `/api/graph` | 全量图谱、节点子图、检索 |
+| `/api/nlp` | 实体关系抽取 |
+| `/api/asr` | 语音转写（腾讯云录音文件识别极速版） |
+| `/api/system` | 子系统状态与中断恢复 |
+
+可选增强依赖：
+
+- 扫描件 PDF OCR：`pip install pymupdf Pillow`。
+- 语音转写：在 `.env` 中配置腾讯云 `TENCENT_APP_ID` / `TENCENT_SECRET_ID` / `TENCENT_SECRET_KEY`。
+- LLM 抽取：配置 `LLM_BASE_URL` 与 `OPENAI_API_KEY` 后优先使用大模型抽取，失败自动回落到词典与规则。
+
+后端子系统测试：
+
+```bash
+cd backend
+python -m pytest tests/test_kg_system.py
+```
 
 ## 文档入口
 

@@ -1,35 +1,630 @@
 <template>
-  <div class="page-shell kg-page">
-    <h1 class="kg-page-title">知识图谱</h1>
-    <section v-if="stats" class="kg-heading"><div class="kg-heading__stats"><div><small>实体总数</small><strong>{{ stats.total_nodes??0 }}</strong></div><div><small>关系总数</small><strong>{{ stats.total_relations??0 }}</strong></div><div><small>节点类型</small><strong>{{ stats.node_types?.length||0 }}</strong></div></div></section>
-    <div class="kg-layout">
-      <section class="section-card graph-panel"><div class="graph-toolbar"><div><el-button-group><el-button size="small" @click="chart?.dispatchAction({type:'restore'})"><el-icon><Refresh /></el-icon> 重置</el-button><el-button size="small" @click="toggleLabels">标签</el-button></el-button-group></div><el-switch v-model="expandMode" active-text="展开模式" /></div><StatusState v-if="loading" class="graph-state" type="loading" title="正在加载知识图谱"/><StatusState v-else-if="error" class="graph-state" type="error" title="知识图谱加载失败" :description="error" action-label="重新加载" @action="loadFullGraph"/><StatusState v-else-if="!graphData.nodes.length" class="graph-state" type="empty" title="暂无图谱数据"/><div ref="graphRef" class="graph-canvas"></div><div class="graph-legend"><span><i class="park"></i>遗址公园</span><span><i class="indicator"></i>评价指标 / 关联实体</span><span><i class="relation"></i>关系</span></div></section>
-      <aside class="kg-sidebar">
-        <section class="section-card kg-search"><div class="section-card__header"><div><h2>搜索与筛选</h2></div></div><el-input v-model="searchText" clearable placeholder="搜索实体，例如：大明宫" @keyup.enter="searchKG"><template #prefix><el-icon><Search /></el-icon></template><template #append><el-button @click="searchKG">搜索</el-button></template></el-input></section>
-        <section class="section-card quick-nav"><div class="section-card__header"><div><h2>快速导航</h2><p>来自当前公园接口。</p></div></div><div v-if="parkList.length"><button v-for="park in parkList" :key="park.id" :class="{active:selectedEntity?.name===(park.short_name||park.name)}" type="button" @click="loadParkGraph(park.short_name||park.name)"><span>{{ park.short_name||park.name }}</span><el-icon><ArrowRight /></el-icon></button></div><StatusState v-else type="empty" title="暂无公园实体"/></section>
-        <section class="section-card entity-panel"><div class="section-card__header"><div><h2>当前选中实体</h2></div></div><template v-if="selectedEntity"><span class="entity-panel__icon"><el-icon><OfficeBuilding /></el-icon></span><strong>{{ selectedEntity.name }}</strong><p>{{ selectedEntity.description||'选择图谱节点后可查看实体关联。' }}</p><div class="entity-panel__metrics"><div><small>当前节点</small><strong>{{ graphData.nodes.length }}</strong></div><div><small>当前关系</small><strong>{{ graphData.edges.length }}</strong></div></div><el-button type="primary" plain @click="exploreSelected">探索该实体</el-button></template><StatusState v-else type="empty" title="尚未选择实体" description="点击图谱节点或快速导航开始探索。"/></section>
-      </aside>
+  <div class="kg-page">
+    <header class="kg-page__bar">
+      <div class="kg-page__title">
+        <span class="kg-page__badge">
+          <el-icon><Share /></el-icon>
+        </span>
+        <div>
+          <h1>知识图谱</h1>
+          <p>文件驱动的实体关系抽取与 3D 语义图谱探索</p>
+        </div>
+      </div>
+      <div class="kg-page__stats">
+        <div><small>实体总数</small><strong>{{ sourceGraph.nodes.length }}</strong></div>
+        <div><small>关系总数</small><strong>{{ sourceGraph.links.length }}</strong></div>
+        <div><small>文献簇</small><strong>{{ sourceClusters.length }}</strong></div>
+        <div><small>存储模式</small><strong>{{ systemStatus.storage_mode === 'neo4j' ? 'Neo4j' : '本地' }}</strong></div>
+      </div>
+      <div class="kg-page__actions">
+        <el-button size="small" @click="goVault">
+          <el-icon><FolderOpened /></el-icon> 文件库
+        </el-button>
+        <el-button size="small" @click="goProcessing">
+          <el-icon><Operation /></el-icon> 处理流程
+        </el-button>
+      </div>
+    </header>
+
+    <StatusState
+      v-if="loading"
+      class="kg-page__state"
+      type="loading"
+      title="正在加载知识图谱"
+      description="正在读取图谱数据并计算 3D 布局。"
+    />
+    <StatusState
+      v-else-if="error"
+      class="kg-page__state"
+      type="error"
+      title="知识图谱加载失败"
+      :description="error"
+      action-label="重新加载"
+      @action="load"
+    />
+    <StatusState
+      v-else-if="!kgStore.graph.nodes.length"
+      class="kg-page__state"
+      type="empty"
+      title="暂无图谱数据"
+      description="请先在「文件库」上传资料，完成文本解析与图谱构建后即可在此探索 3D 语义图谱。"
+      action-label="前往文件库"
+      @action="goVault"
+    />
+
+    <div v-else class="kg-page__body">
+      <div v-if="leftPanelOpen" class="kg-page__panel kg-page__panel--left">
+        <GraphControlPanel
+          :search="search"
+          :active-types="activeTypes"
+          :type-counts="typeCounts"
+          :layout-type="layoutType"
+          :visual-theme="visualTheme"
+          :node-size-multiplier="nodeSizeMultiplier"
+          :node-count="displayGraph?.nodes.length || 0"
+          :edge-count="displayGraph?.links.length || 0"
+          :loading="layoutLoading"
+          :styles="sourceGraph.styles"
+          :source-cluster-mode="sourceClusterMode"
+          :source-clusters="sourceClusters"
+          :focused-source-id="focusedSourceId"
+          :presets="displayPresets"
+          :active-preset-id="activePresetId"
+          :save-status="saveStatus"
+          :saved-summary="savedSummary"
+          :saved-time-label="savedTimeLabel"
+          :has-unsaved-changes="hasUnsavedChanges"
+          @update:search="onSearchChange"
+          @update:layout-type="setLayoutType"
+          @update:visual-theme="setVisualTheme"
+          @update:node-size-multiplier="setNodeSizeMultiplier"
+          @update:source-cluster-mode="setSourceClusterMode"
+          @update:focused-source-id="onFocusSourceChange"
+          @toggle-type="toggleType"
+          @apply-preset="applyDisplayPreset"
+          @remove-preset="removeCustomPreset"
+          @save-preset="saveCurrentAsPreset"
+          @focus-search="focusSearch"
+          @refresh="load"
+          @collapse="setLeftPanelOpen(false)"
+        />
+      </div>
+
+      <main class="kg-page__canvas">
+        <div class="kg-page__canvas-bar">
+          <div class="kg-page__canvas-left">
+            <el-button v-if="!leftPanelOpen" size="small" title="显示控制面板" @click="setLeftPanelOpen(true)">
+              <el-icon><DArrowRight /></el-icon>
+            </el-button>
+            <el-button v-if="graphViewMode === 'planet' && sourceClusters.length > 1" size="small" @click="handleExitOverview">
+              <el-icon><Back /></el-icon> 返回文献星空
+            </el-button>
+          </div>
+          <span class="kg-page__breadcrumb">
+            {{ visualTheme === 'jspace' ? 'J-space 语义云图' : 'Jarvis 3D 语义图谱' }} /
+            {{ graphViewMode === 'planet' && activePlanet ? `近景 · ${activePlanet.label}` : selectedNode?.label || '全局总览' }}
+          </span>
+          <div class="kg-page__canvas-right">
+            <el-button v-if="!rightPanelOpen" size="small" title="显示详情面板" @click="setRightPanelOpen(true)">
+              <el-icon><DArrowLeft /></el-icon>
+            </el-button>
+          </div>
+        </div>
+
+        <GraphScene
+          class="kg-page__scene"
+          data-testid="graph-canvas"
+          :graph="displayGraph"
+          :selected-node-id="selectedNodeId"
+          :hovered-node-id="hoveredNodeId"
+          :highlighted-node-ids="highlightedNodeIds"
+          :highlighted-link-ids="highlightedLinkIds"
+          :graph-view-mode="graphViewMode"
+          :source-cluster-mode="sourceClusterMode"
+          :cluster-bounds="clusterBounds"
+          :camera-controller="cameraController"
+          :camera-min-distance="showOverviewPlanets ? 8 : 6"
+          :camera-max-distance="showOverviewPlanets ? 200 : 110"
+          @select="handleSelectNode"
+          @hover="setHoveredNodeId"
+          @background-click="clearSelection"
+          @enter-planet="handleEnterPlanet"
+        />
+
+        <footer class="kg-page__legend">
+          <template v-if="sourceClusterMode === 'by_source' && sourceClusters.length > 1">
+            <button
+              v-for="cluster in sourceClusters.slice(0, 8)"
+              :key="cluster.id"
+              type="button"
+              class="kg-page__legend-chip"
+              :class="{ 'is-active': cluster.id === focusedSourceId && graphViewMode === 'planet' }"
+              @click="handleEnterPlanet(cluster.id)"
+            >
+              <span :style="{ background: cluster.color }" />
+              {{ cluster.label }}
+            </button>
+          </template>
+          <template v-else>
+            <span v-for="type in filterableTypes" :key="type" class="kg-page__legend-chip">
+              <span :style="{ background: typeStyle(type).color }" />
+              {{ typeStyle(type).label }}
+            </span>
+          </template>
+        </footer>
+      </main>
+
+      <div v-if="rightPanelOpen" class="kg-page__panel kg-page__panel--right">
+        <NodeDetailPanel
+          :graph="displayGraph || sourceGraph"
+          :node="detailNode"
+          :related-links="relatedLinks"
+          :related-evidence="relatedEvidence"
+          :visual-theme="visualTheme"
+          :file-name-map="fileNameMap"
+          @close="clearSelection"
+          @collapse="setRightPanelOpen(false)"
+          @select-node="handleSelectNode"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import * as echarts from 'echarts'
-import api from '@/utils/api'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import StatusState from '@/components/common/StatusState.vue'
-const graphRef=ref();const searchText=ref('');const stats=ref(null);const parkList=ref([]);const loading=ref(true);const error=ref('');const selectedEntity=ref(null);const graphData=ref({nodes:[],edges:[]});const expandMode=ref(true);const labelsVisible=ref(true);let chart;let observer
-onMounted(async()=>{chart=echarts.init(graphRef.value);chart.on('click',params=>{if(params.dataType==='node')selectedEntity.value=params.data});observer=new ResizeObserver(()=>chart?.resize());observer.observe(graphRef.value);await Promise.all([loadStats(),loadParks()]);await loadFullGraph()});onBeforeUnmount(()=>{observer?.disconnect();chart?.dispose()})
-async function loadStats(){try{stats.value=(await api.get('/kg/stats',{silent:true})).data}catch{}}
-async function loadParks(){try{parkList.value=(await api.get('/parks',{params:{page_size:8},silent:true})).data.items||[]}catch{parkList.value=[]}}
-async function loadFullGraph(){loading.value=true;error.value='';try{const res=await api.get('/kg/entity/Park',{params:{limit:50},silent:true});const parks=res.data||[];const nodes=parks.map(p=>({id:p.short_name||p.name,name:p.short_name||p.name,symbolSize:48,category:0,description:p.description||'',itemStyle:{color:'#2563eb'}}));const edges=[];const groups={};parks.forEach(p=>{const type=p.type||p.park_type||'未分类';(groups[type]||=[]).push(p.short_name||p.name)});Object.values(groups).forEach(names=>{for(let i=0;i<names.length;i+=1)for(let j=i+1;j<names.length;j+=1)edges.push({source:names[i],target:names[j],name:'同类型'})});graphData.value={nodes,edges};renderGraph()}catch(e){error.value=e.response?.data?.detail||'请检查知识图谱服务后重试。';graphData.value={nodes:[],edges:[]}}finally{loading.value=false}}
-async function loadParkGraph(name){loading.value=true;error.value='';try{const res=await api.get(`/kg/neighbors/${encodeURIComponent(name)}`,{silent:true});const data=res.data||{};const nodes=(data.nodes||[]).map(n=>({id:n.name,name:n.name?.length>16?`${n.name.slice(0,16)}…`:n.name,fullName:n.name,symbolSize:n.labels?.includes('Park')?54:30,category:n.labels?.includes('Park')?0:1,description:n.description||'',itemStyle:{color:n.labels?.includes('Park')?'#2563eb':'#8b5cf6'}}));const edges=(data.edges||[]).map(edge=>({source:edge.source,target:edge.target,name:edge.type}));graphData.value={nodes,edges};selectedEntity.value=nodes.find(n=>n.category===0)||null;renderGraph()}catch(e){error.value=e.response?.data?.detail||'实体关联加载失败。'}finally{loading.value=false}}
-function renderGraph(){chart.setOption({tooltip:{trigger:'item',formatter:p=>p.dataType==='edge'?p.data.name||'关联':p.data.fullName||p.name},legend:{data:['遗址公园','关联实体'],top:16},series:[{type:'graph',layout:'force',data:graphData.value.nodes,links:graphData.value.edges,roam:true,draggable:true,categories:[{name:'遗址公园'},{name:'关联实体'}],label:{show:labelsVisible.value,position:'bottom',fontSize:10,color:'#475467'},force:{repulsion:320,gravity:.08,edgeLength:[90,190]},lineStyle:{color:'#cbd5e1',width:1.2,curveness:.08},emphasis:{focus:'adjacency',lineStyle:{width:3}}}]},true)}
-async function searchKG(){if(!searchText.value.trim())return;try{const results=(await api.get('/kg/search',{params:{q:searchText.value},silent:true})).data||[];const park=results.find(item=>item.labels?.includes('Park'));if(park)loadParkGraph(park.data?.short_name||park.data?.name);else error.value='没有找到可展开的公园实体。'}catch(e){error.value=e.response?.data?.detail||'搜索失败。'}}
-function toggleLabels(){labelsVisible.value=!labelsVisible.value;renderGraph()}function exploreSelected(){if(selectedEntity.value?.fullName||selectedEntity.value?.name)loadParkGraph(selectedEntity.value.fullName||selectedEntity.value.name)}
+import { useKgStore } from '@/stores/kg'
+import { getKgSystemStatus } from '@/utils/kgApi'
+import GraphScene from '@/features/kg/graph3d/GraphScene.vue'
+import GraphControlPanel from '@/features/kg/graph3d/GraphControlPanel.vue'
+import NodeDetailPanel from '@/features/kg/graph3d/NodeDetailPanel.vue'
+import { adaptGraphData, filterRenderGraph } from '@/features/kg/graph3d/graphDataAdapter'
+import { filterableTypes, getNodeTypeStyle } from '@/features/kg/graph3d/graphStyleConfig'
+import {
+  annotateSourceClusters,
+  buildEntitySourceMap,
+  computeClusterBounds,
+  filterLinksForClusterMode,
+  filterNodesBySource,
+} from '@/features/kg/graph3d/sourceCluster'
+import { useGraphFilters, loadGraphSearch, saveGraphSearch } from '@/features/kg/graph3d/useGraphFilters'
+import { useGraphLayout } from '@/features/kg/graph3d/useGraphLayout'
+import { useGraphSelection } from '@/features/kg/graph3d/useGraphSelection'
+import { createGraphCameraController } from '@/features/kg/graph3d/useGraphCamera'
+
+const router = useRouter()
+const kgStore = useKgStore()
+
+const loading = ref(true)
+const error = ref('')
+const search = ref(loadGraphSearch())
+const systemStatus = ref({ storage_mode: 'local' })
+
+const {
+  activeTypes,
+  layoutType,
+  visualTheme,
+  nodeSizeMultiplier,
+  sourceClusterMode,
+  focusedSourceId,
+  graphViewMode,
+  leftPanelOpen,
+  rightPanelOpen,
+  saveStatus,
+  savedSummary,
+  savedTimeLabel,
+  hasUnsavedChanges,
+  activePresetId,
+  displayPresets,
+  toggleType,
+  setLayoutType,
+  setVisualTheme,
+  setNodeSizeMultiplier,
+  setSourceClusterMode,
+  setLeftPanelOpen,
+  setRightPanelOpen,
+  enterPlanet,
+  exitToOverview,
+  applyDisplayPreset,
+  saveCurrentAsPreset,
+  removeCustomPreset,
+} = useGraphFilters()
+
+const cameraController = createGraphCameraController()
+let lastCameraKey = ''
+
+const fileNameMap = computed(() => {
+  const map = new Map()
+  kgStore.files.forEach((file) => map.set(file.id, file.name))
+  return map
+})
+
+const sourceGraph = computed(() => adaptGraphData(kgStore.graph, 'dmg_semantic_graph', visualTheme.value, fileNameMap.value))
+
+const sourceClusters = computed(() => {
+  const entitySourceMap = buildEntitySourceMap(kgStore.graph)
+  return annotateSourceClusters(sourceGraph.value, entitySourceMap, fileNameMap.value).clusters
+})
+
+const typeCounts = computed(() => {
+  const counts = { place: 0, person: 0, event: 0, concept: 0, file: 0 }
+  sourceGraph.value.nodes.forEach((node) => {
+    counts[node.type] = (counts[node.type] || 0) + 1
+  })
+  return counts
+})
+
+const showOverviewPlanets = computed(
+  () => graphViewMode.value === 'overview' && sourceClusterMode.value === 'by_source' && sourceClusters.value.length > 1
+)
+
+const overviewGraphInput = computed(() => {
+  const typeFiltered = filterRenderGraph(sourceGraph.value, activeTypes.value)
+  const links = filterLinksForClusterMode(typeFiltered.links, typeFiltered.nodes, sourceClusterMode.value)
+  return { ...typeFiltered, links }
+})
+
+const layoutInput = computed(() => {
+  if (showOverviewPlanets.value) return { graph: overviewGraphInput.value, clusterMode: 'by_source' }
+  if (graphViewMode.value === 'planet' && focusedSourceId.value) {
+    const typeFiltered = filterRenderGraph(sourceGraph.value, activeTypes.value)
+    const nodes = filterNodesBySource(typeFiltered.nodes, focusedSourceId.value)
+    if (!nodes.length) return null
+    const ids = new Set(nodes.map((node) => node.id))
+    const links = typeFiltered.links.filter((link) => ids.has(link.source) && ids.has(link.target))
+    return { graph: { ...typeFiltered, nodes, links }, clusterMode: 'unified' }
+  }
+  return { graph: overviewGraphInput.value, clusterMode: sourceClusterMode.value }
+})
+
+const activeGraph = computed(() => layoutInput.value?.graph || null)
+const activeClusterMode = computed(() => layoutInput.value?.clusterMode || 'unified')
+
+const { positionedGraph, loading: layoutLoading, ready: layoutReady } = useGraphLayout(
+  activeGraph,
+  layoutType,
+  activeClusterMode
+)
+
+const { selectedNodeId, selectedNode, hoveredNodeId, highlightedNodeIds, highlightedLinkIds, selectNode, clearSelection, setHoveredNodeId } =
+  useGraphSelection(positionedGraph)
+
+const displayGraph = computed(() => {
+  const base = positionedGraph.value
+  if (!base) return null
+  return { ...base, styles: { ...base.styles, nodeSizeMultiplier: nodeSizeMultiplier.value } }
+})
+
+const activePlanet = computed(() => sourceClusters.value.find((cluster) => cluster.id === focusedSourceId.value) || null)
+
+const clusterBounds = computed(() => {
+  if (!positionedGraph.value || !showOverviewPlanets.value) return []
+  return computeClusterBounds(positionedGraph.value.nodes, sourceClusters.value)
+})
+
+/** 详情面板展示的节点：优先当前选中，否则回落到最相关的节点。 */
+const detailNode = computed(() => {
+  if (selectedNode.value) return selectedNode.value
+  const nodes = positionedGraph.value?.nodes || []
+  return nodes.find((node) => node.label === '大明宫') || nodes[0] || null
+})
+
+/** 当前可见节点的外接球，用于把镜头收到合适距离。 */
+const graphBounds = computed(() => {
+  const nodes = positionedGraph.value?.nodes || []
+  if (!nodes.length) return null
+  let cx = 0
+  let cy = 0
+  let cz = 0
+  nodes.forEach((node) => {
+    cx += node.x
+    cy += node.y
+    cz += node.z
+  })
+  cx /= nodes.length
+  cy /= nodes.length
+  cz /= nodes.length
+  let maxRadius = 0
+  nodes.forEach((node) => {
+    maxRadius = Math.max(maxRadius, Math.hypot(node.x - cx, node.y - cy, node.z - cz))
+  })
+  return { x: cx, y: cy, z: cz, radius: Math.max(maxRadius, 2) }
+})
+
+const relatedLinks = computed(() => {
+  if (!detailNode.value || !positionedGraph.value) return []
+  return positionedGraph.value.links.filter(
+    (link) => link.source === detailNode.value.id || link.target === detailNode.value.id
+  )
+})
+
+const relatedEvidence = computed(() => {
+  if (!detailNode.value || !positionedGraph.value) return []
+  const ids = new Set(detailNode.value.evidenceIds || [])
+  relatedLinks.value.forEach((link) => {
+    if (link.evidenceId) ids.add(link.evidenceId)
+  })
+  return positionedGraph.value.evidence.filter((item) => ids.has(item.id))
+})
+
+function typeStyle(type) {
+  return getNodeTypeStyle(type, sourceGraph.value.styles)
+}
+
+function onSearchChange(value) {
+  search.value = value
+  saveGraphSearch(value)
+}
+
+function goVault() {
+  router.push('/kg/vault')
+}
+
+function goProcessing() {
+  router.push('/kg/processing')
+}
+
+function focusSearch() {
+  const query = search.value.trim()
+  if (!query) return
+  const nodes = positionedGraph.value?.nodes || []
+  const target =
+    nodes.find((node) => node.label.includes(query)) ||
+    nodes.find((node) => node.label.toLowerCase().includes(query.toLowerCase()))
+  if (!target) {
+    ElMessage({ message: `未在当前图谱中找到「${query}」`, type: 'warning' })
+    return
+  }
+  handleSelectNode(target)
+}
+
+function handleSelectNode(node) {
+  if (!node) return
+  selectNode(node)
+  setRightPanelOpen(true)
+  cameraController.focusOnNode(node)
+}
+
+function handleEnterPlanet(clusterId) {
+  clearSelection()
+  lastCameraKey = ''
+  enterPlanet(clusterId)
+}
+
+function handleExitOverview() {
+  clearSelection()
+  lastCameraKey = ''
+  exitToOverview()
+}
+
+function onFocusSourceChange(clusterId) {
+  if (clusterId) handleEnterPlanet(clusterId)
+  else handleExitOverview()
+}
+
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    await Promise.all([kgStore.loadGraph(), kgStore.loadFiles({ silent: true })])
+    systemStatus.value = (await getKgSystemStatus().catch(() => systemStatus.value)) || systemStatus.value
+  } catch (err) {
+    error.value = err?.message || '请检查知识图谱服务后重试。'
+  } finally {
+    loading.value = false
+  }
+}
+
+/** 相机自动聚焦：布局就绪或视图模式变化时，把镜头移动到目标位置。 */
+const cameraKey = computed(
+  () => `${graphViewMode.value}:${focusedSourceId.value || 'all'}:${positionedGraph.value?.nodes.length || 0}`
+)
+
+watch([layoutReady, cameraKey], () => {
+  if (!layoutReady.value) return
+  const key = cameraKey.value
+  if (key === lastCameraKey) return
+  lastCameraKey = key
+  if (showOverviewPlanets.value) {
+    cameraController.focusOnOverview(clusterBounds.value)
+    return
+  }
+  if (graphViewMode.value === 'planet' && positionedGraph.value?.nodes.length) {
+    const bounds = clusterBounds.value.find((item) => item.id === focusedSourceId.value)
+    if (bounds) {
+      cameraController.focusOnCluster(bounds, bounds.radius, 'planet')
+      return
+    }
+  }
+  const bounds = clusterBounds.value.length
+    ? clusterBounds.value
+    : graphBounds.value
+      ? [{ ...graphBounds.value, id: 'all', label: '全部', color: '#94a3b8', nodeCount: positionedGraph.value?.nodes.length || 0 }]
+      : []
+  cameraController.focusOnOverview(bounds)
+})
+
+onMounted(load)
 </script>
 
 <style scoped lang="scss">
-.kg-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.kg-heading__title{display:flex;align-items:center;gap:14px}.kg-heading__title>span{width:50px;height:50px;display:grid;place-items:center;border-radius:15px;color:#fff;background:var(--brand-600);font-size:24px;box-shadow:0 10px 24px rgba(37,99,235,.22)}.kg-heading h1{margin:0;font-size:30px}.kg-heading p{margin:6px 0 0;color:var(--text-secondary);font-size:13px}.kg-heading__stats{display:flex;align-items:center;border:1px solid var(--border);border-radius:14px;background:#fff}.kg-heading__stats>div{min-width:104px;padding:12px 18px;display:grid;border-right:1px solid var(--border)}.kg-heading__stats>div:last-child{border:0}.kg-heading__stats small{color:var(--text-tertiary);font-size:10px}.kg-heading__stats strong{margin-top:3px;font-size:18px}.kg-layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px}.graph-panel{min-height:690px;position:relative;overflow:hidden}.graph-toolbar{height:58px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}.graph-canvas{width:100%;height:630px}.graph-state{position:absolute;inset:50% auto auto 50%;width:min(460px,calc(100% - 36px));transform:translate(-50%,-45%);z-index:2}.graph-legend{position:absolute;left:18px;bottom:16px;padding:10px 13px;display:flex;gap:14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.94);font-size:10px}.graph-legend span{display:flex;align-items:center;gap:5px}.graph-legend i{width:9px;height:9px;border-radius:50%;background:#2563eb}.graph-legend i.indicator{background:#8b5cf6}.graph-legend i.relation{width:22px;height:2px;border-radius:0;background:#cbd5e1}.kg-sidebar{display:grid;align-content:start;gap:14px}.kg-search,.quick-nav,.entity-panel{padding:20px}.quick-nav>div:not(.section-card__header){display:grid;gap:5px}.quick-nav button{padding:10px 11px;display:flex;align-items:center;justify-content:space-between;border:0;border-radius:9px;color:var(--text-secondary);background:transparent;cursor:pointer;text-align:left}.quick-nav button:hover,.quick-nav button.active{color:var(--brand-600);background:var(--brand-50)}.entity-panel{text-align:left}.entity-panel__icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;color:#fff;background:var(--brand-600);font-size:21px}.entity-panel>strong{display:block;margin-top:13px;font-size:17px}.entity-panel>p{margin:8px 0 15px;color:var(--text-secondary);font-size:12px;line-height:1.7}.entity-panel__metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px}.entity-panel__metrics>div{padding:11px;border-radius:10px;background:var(--surface-soft)}.entity-panel__metrics small{display:block;color:var(--text-tertiary);font-size:9px}.entity-panel__metrics strong{font-size:18px}@media(max-width:1050px){.kg-layout{grid-template-columns:1fr}.kg-sidebar{grid-template-columns:1fr 1fr}.entity-panel{grid-column:1/-1}}@media(max-width:700px){.kg-heading{align-items:flex-start;flex-direction:column}.kg-heading__stats{width:100%;overflow:auto}.kg-heading__stats>div{flex:1}.graph-panel{min-height:580px}.graph-canvas{height:520px}.kg-sidebar{grid-template-columns:1fr}.entity-panel{grid-column:auto}.graph-legend{max-width:calc(100% - 36px);flex-wrap:wrap}}
-.kg-page-title{width:1px;height:1px;padding:0;position:absolute;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.kg-heading{justify-content:flex-end}.kg-heading__stats{border:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0;background:transparent}
+.kg-page {
+  display: grid;
+  gap: 14px;
+}
+
+.kg-page__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kg-page__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+}
+
+.kg-page__badge {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 19px;
+  background: var(--brand-600);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.kg-page__stats {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+
+  > div {
+    min-width: 92px;
+    padding: 8px 14px;
+    display: grid;
+    border-right: 1px solid var(--border);
+
+    &:last-child {
+      border-right: 0;
+    }
+  }
+
+  small {
+    color: var(--text-tertiary);
+    font-size: 10px;
+  }
+
+  strong {
+    margin-top: 2px;
+    font-size: 16px;
+  }
+}
+
+.kg-page__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.kg-page__state {
+  min-height: 320px;
+}
+
+.kg-page__body {
+  display: flex;
+  height: calc(100vh - 260px);
+  min-height: 520px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.kg-page__panel {
+  flex-shrink: 0;
+  width: 280px;
+  min-width: 0;
+
+  &--right {
+    width: 320px;
+  }
+}
+
+.kg-page__canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kg-page__canvas-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.kg-page__canvas-left,
+.kg-page__canvas-right {
+  display: flex;
+  gap: 6px;
+  min-width: 34px;
+}
+
+.kg-page__breadcrumb {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kg-page__scene {
+  flex: 1;
+  min-height: 0;
+}
+
+.kg-page__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.kg-page__legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 11px;
+  color: var(--text-secondary);
+
+  span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &.is-active {
+    border-color: var(--brand-500);
+    background: var(--brand-50);
+    color: var(--brand-700);
+  }
+}
+
+@media (max-width: 1080px) {
+  .kg-page__panel {
+    display: none;
+  }
+}
 </style>

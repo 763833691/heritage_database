@@ -49,6 +49,7 @@ export default defineConfig(({ mode }) => {
         manualChunks(id) {
           if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) return 'charts'
           if (id.includes('node_modules/element-plus') || id.includes('node_modules/@element-plus')) return 'ui'
+          if (id.includes('node_modules/three') || id.includes('node_modules/d3-')) return 'graph3d'
           if (id.includes('node_modules/vue') || id.includes('node_modules/pinia')) return 'vue-vendor'
         },
       },

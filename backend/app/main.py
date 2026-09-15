@@ -6,6 +6,9 @@ from sqlalchemy import text
 from .core.config import settings
 from .core.database import engine, Base
 from .api import api_router
+from .kg.services.file_service import file_service
+from .kg.services.graph_repository import graph_repository
+from .kg.services.job_recovery import recover_interrupted_work
 
 
 @asynccontextmanager
@@ -18,7 +21,22 @@ async def lifespan(app: FastAPI):
         print("[OK] Database connection verified")
     except Exception as e:
         print(f"[WARN] Database connection failed: {e}")
+
+    # 知识图谱子系统：文件库状态、图谱仓库与中断任务恢复
+    try:
+        await file_service.init()
+        await recover_interrupted_work()
+        await graph_repository.init()
+        print(f"[OK] Knowledge graph subsystem ready (storage: {settings.storage_dir})")
+    except Exception as e:
+        print(f"[WARN] Knowledge graph subsystem init failed: {e}")
+
     yield
+
+    try:
+        await graph_repository.close()
+    except Exception:
+        pass
     print("[INFO] Application shutdown")
 
 

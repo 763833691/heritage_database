@@ -23,12 +23,19 @@ dashscope==1.14.0  # 通义千问
 # 认证
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+# passlib 1.7.4 无法在 bcrypt>=4.1 上初始化（72 字节校验报错），必须锁 4.0.x
+bcrypt==4.0.1
 
 # 数据处理
 pandas==2.1.4
 numpy==1.26.2
 python-docx==1.1.0
 openpyxl==3.1.2
+
+# 知识图谱子系统（文件库 / 文本解析 / 图谱构建 / 语音转写）
+pypdf>=5.7.0
+pymupdf>=1.24.0   # 可选：扫描件 PDF OCR
+Pillow>=11.0.0    # 可选：扫描件 PDF OCR
 
 # 工具
 pydantic==2.5.0
@@ -37,3 +44,6 @@ python-dotenv==1.0.0
 httpx==0.25.2
 sse-starlette==1.8.2
 jieba==0.42.1
+
+# 测试
+pytest>=8.0.0
