@@ -1,9 +1,21 @@
+import json
 from pathlib import Path
 from typing import Optional
 
 from pydantic_settings import BaseSettings
 
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+
+def parse_json_mapping(raw: str) -> dict:
+    """解析 JSON 对象配置；非法内容返回空 dict（由调用方按未配置处理）。"""
+    if not raw or not str(raw).strip():
+        return {}
+    try:
+        value = json.loads(raw)
+    except Exception:
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 class Settings(BaseSettings):
@@ -53,6 +65,38 @@ class Settings(BaseSettings):
     TENCENT_SECRET_KEY: str = ""
     ASR_ENGINE_TYPE: str = "16k_zh"
     ASR_MAX_UPLOAD_MB: int = 20
+
+    # ===== 田野调研（KML 轨迹照片 / 调研事件 / 报告生成）=====
+    TRACK_STORAGE_DIR: str = "./data/tracks"
+    TRACK_MAX_UPLOAD_MB: int = 50
+    TRACK_DOWNLOAD_CONCURRENCY: int = 4
+    TRACK_DOWNLOAD_RETRIES: int = 2
+    # 视觉语义描述并发度（照片数量多时按模型速率上限调整，过高会被上游限流）
+    TRACK_DESCRIBE_CONCURRENCY: int = 400
+    TRACK_THUMB_WIDTH: int = 400
+    TRACK_MAX_PHOTO_MB: int = 20
+    TRACK_MAX_PHOTOS_PER_TRACK: int = 0  # 0 表示不限制
+    # 逆地理编码 Provider：bigdatacloud（免 Key，默认）/ nominatim
+    GEOCODER_PROVIDER: str = "bigdatacloud"
+    GEOCODER_TIMEOUT_SECONDS: int = 15
+    GEOCODER_INTERVAL_SECONDS: float = 0.3
+    # 视觉语义描述超时（复用 scanned_pdf_extractor 的 OpenAI 兼容通道）
+    VISION_TIMEOUT_SECONDS: int = 60
+    # 调研报告 docx 输出目录
+    SURVEY_REPORT_DIR: str = "./data/survey/reports"
+
+    # ===== AI 模型路由（按任务分配模型，文本/视觉可分别指定）=====
+    # MODEL_REGISTRY: JSON，模型别名 -> {type, base_url, model, api_key 或 api_key_env}
+    #   type: text（文本）/ vision（视觉）/ multimodal（两者皆可）
+    # MODEL_ROUTES: JSON，任务名（或能力名 text/vision）-> 模型别名
+    #   任务名见 app/core/model_router.py TASK_CAPABILITIES，如 text.chat / vision.describe
+    #   留空则完全沿用现有 openai_* 配置，行为不变
+    MODEL_REGISTRY: str = ""
+    MODEL_ROUTES: str = ""
+    # 模型 API Key 落库加密密钥（Fernet key 或任意口令）；留空则由 SECRET_KEY 派生
+    AI_CREDENTIAL_ENCRYPTION_KEY: str = ""
+    # 首次启动时是否播种预置模型（火山/移动云/梧桐等，默认关闭且不带 Key）
+    AI_MODEL_SEED_PRESETS: bool = True
 
     @property
     def storage_dir(self) -> Path:
@@ -131,6 +175,37 @@ class Settings(BaseSettings):
     @property
     def asr_max_upload_size(self) -> int:
         return self.ASR_MAX_UPLOAD_MB * 1024 * 1024
+
+    @property
+    def track_storage_dir(self) -> Path:
+        """田野调研轨迹数据的根目录（绝对路径）。"""
+        path = Path(self.TRACK_STORAGE_DIR)
+        return path if path.is_absolute() else _BACKEND_DIR / path
+
+    @property
+    def track_max_upload_size(self) -> int:
+        return self.TRACK_MAX_UPLOAD_MB * 1024 * 1024
+
+    @property
+    def track_max_photo_size(self) -> int:
+        return self.TRACK_MAX_PHOTO_MB * 1024 * 1024
+
+    @property
+    def geocoder_provider(self) -> str:
+        return (self.GEOCODER_PROVIDER or "bigdatacloud").strip().lower()
+
+    @property
+    def survey_report_dir(self) -> Path:
+        path = Path(self.SURVEY_REPORT_DIR)
+        return path if path.is_absolute() else _BACKEND_DIR / path
+
+    @property
+    def model_registry(self) -> dict:
+        return parse_json_mapping(self.MODEL_REGISTRY)
+
+    @property
+    def model_routes(self) -> dict:
+        return parse_json_mapping(self.MODEL_ROUTES)
 
     # AI配置
     AI_PROVIDER: str = "mock"  # dashscope / openai / mock

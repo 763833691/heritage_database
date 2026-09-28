@@ -34,6 +34,41 @@ def _get_rel_target_title(db, rel, lit_id: int) -> str:
     return target.title if target else "未知"
 
 
+# 支持的前端排序键：relevance（保留检索顺序）/ year（发表时间）/ citations（被引量）
+_SUPPORTED_SORTS = {"relevance", "year", "citations"}
+
+
+def _normalize_sort(sort: str | None) -> str:
+    value = (sort or "relevance").strip().lower()
+    return value if value in _SUPPORTED_SORTS else "relevance"
+
+
+def _sort_literature_items(items: list[dict], sort: str) -> list[dict]:
+    """按发表时间或被引量对文献结果排序；None 值排在末尾，relevance 保持原顺序。"""
+    if sort == "year":
+        return sorted(items, key=lambda item: (item.get("year") is None, -(item.get("year") or 0)))
+    if sort == "citations":
+        return sorted(items, key=lambda item: (item.get("citation_count") is None, -(item.get("citation_count") or 0)))
+    return items
+
+
+def _enrich_search_results(db: Session, results: list[dict]) -> list[dict]:
+    """为语义检索结果补齐作者、期刊、类型与引用量，供卡片展示与排序使用。"""
+    ids = [item["id"] for item in results if item.get("id")]
+    if not ids:
+        return results
+    lits = {lit.id: lit for lit in db.query(Literature).filter(Literature.id.in_(ids)).all()}
+    for item in results:
+        lit = lits.get(item.get("id"))
+        if lit is None:
+            continue
+        item.setdefault("authors", json.loads(lit.authors) if lit.authors else [])
+        item.setdefault("journal", lit.journal)
+        item.setdefault("doc_type", lit.doc_type)
+        item["citation_count"] = lit.citation_count
+    return results
+
+
 # ==================== 上传文献 ====================
 
 @router.post("/upload")
@@ -172,6 +207,7 @@ async def list_literature(
     year_from: int = Query(None),
     year_to: int = Query(None),
     doc_type: str = Query(None),
+    sort: str = Query("relevance", description="relevance/year/citations"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -192,7 +228,14 @@ async def list_literature(
         query = query.filter(Literature.doc_type == doc_type)
 
     total = query.count()
-    items = query.order_by(Literature.created_at.desc()).offset(
+    sort_key = _normalize_sort(sort)
+    if sort_key == "year":
+        order = (Literature.year.is_(None), Literature.year.desc())
+    elif sort_key == "citations":
+        order = (Literature.citation_count.is_(None), Literature.citation_count.desc())
+    else:
+        order = (Literature.created_at.desc(),)
+    items = query.order_by(*order).offset(
         (page - 1) * page_size
     ).limit(page_size).all()
 
@@ -324,12 +367,20 @@ async def get_bibliometrics(
 async def search_literature(
     q: str = Query(...),
     limit: int = Query(10, ge=1, le=50),
+    sort: str = Query("relevance", description="relevance/year/citations"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """语义搜索（ChromaDB 向量检索优先，SQL LIKE 兜底）"""
+    """语义搜索（ChromaDB 向量检索优先，SQL LIKE 兜底），支持按时间/被引量排序。"""
     results = semantic_search(q, limit, db)
-    return {"query": q, "results": results, "mode": "semantic" if any(r.get("similarity") for r in results) else "sql"}
+    results = _enrich_search_results(db, results)
+    results = _sort_literature_items(results, _normalize_sort(sort))
+    return {
+        "query": q,
+        "results": results,
+        "sort": _normalize_sort(sort),
+        "mode": "semantic" if any(r.get("similarity") for r in results) else "sql",
+    }
 
 
 # ==================== 向量索引管理 ====================

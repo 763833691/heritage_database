@@ -51,7 +51,6 @@ const POLL_TIMEOUT = 120000
 
 // ===== 文件库 =====
 export const getKgFiles = () => request(api.get('/file/list', { timeout: POLL_TIMEOUT }))
-export const getKgFile = (fileId) => request(api.get(`/file/${fileId}`))
 export const uploadKgFile = (file, folderId = '') => {
   const form = new FormData()
   form.append('file', file)
@@ -69,6 +68,10 @@ export const importFromKgLibrary = (fileId, sourceFileId) =>
   request(api.post(`/file/${fileId}/import/${sourceFileId}`))
 export const updateKgFile = (fileId, payload) => request(api.patch(`/file/${fileId}`, payload))
 export const deleteKgFile = (fileId) => request(api.delete(`/file/${fileId}`))
+export const downloadKgFile = async (fileId) => {
+  const response = await api.get(`/file/${fileId}/download`, { responseType: 'blob', timeout: 300000 })
+  return response.data
+}
 
 // ===== 分类（文件库目录）=====
 export const getKgFolders = () => request(api.get('/file/folders/list'))
@@ -100,8 +103,6 @@ export const runKgTextPipeline = (fileId) =>
 
 // ===== 图谱数据 =====
 export const getKgFullGraph = () => request(api.get('/graph/full'))
-export const getKgNodeGraph = (nodeId) => request(api.get(`/graph/node/${nodeId}`))
-export const searchKgGraph = (q) => request(api.get('/graph/search', { params: { q } }))
 
 // ===== 系统状态 =====
 export const getKgSystemStatus = () => request(api.get('/system/status'))

@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, AsyncGenerator
 
 from ..core.config import settings
+from ..core.model_router import resolve_model
 
 # 线程池：用于执行同步 DashScope SDK 调用
 _stream_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="llm")
@@ -232,10 +233,20 @@ class MockProvider(BaseLLMProvider):
 def get_llm_provider() -> BaseLLMProvider:
     """
     工厂函数：根据配置返回合适的 LLM 提供商
+    - 模型路由 text.chat 已配置 → 走该模型（OpenAI 兼容接口）
     - dashscope + LLM_BASE_URL → 走 OpenAI 兼容接口（推荐，支持新模型）
     - dashscope 无 base_url → 走原生 DashScope SDK
     - openai → 走 OpenAI SDK
     """
+    try:
+        routed = resolve_model("text.chat")
+    except ValueError as exc:
+        print(f"[LLM] 模型路由配置无效，回退默认配置: {exc}")
+        routed = None
+    if routed is not None and routed.api_key:
+        print(f"[LLM] 模型路由 text.chat -> {routed.alias}（{routed.model} @ {routed.base_url}）")
+        return OpenAIProvider(model=routed.model, api_key=routed.api_key, base_url=routed.base_url)
+
     if not settings.ai_available:
         print("[LLM] 未配置 AI API key，使用本地模板模式")
         return MockProvider()

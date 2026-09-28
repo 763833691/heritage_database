@@ -3,7 +3,6 @@
     <div class="stat-card__copy">
       <div class="stat-card__label">{{ label }}</div>
       <div class="stat-card__value">{{ value }}</div>
-      <div v-if="delta" class="stat-card__delta">较上次 <span>{{ delta }}</span></div>
     </div>
     <span class="stat-card__icon" :class="`stat-card__icon--${tone}`">
       <el-icon><component :is="icon" /></el-icon>
@@ -15,7 +14,6 @@
 defineProps({
   label: { type: String, required: true },
   value: { type: [String, Number], required: true },
-  delta: { type: String, default: '' },
   tone: { type: String, default: 'blue' },
   icon: { type: [String, Object, Function], default: '' },
 })
@@ -45,16 +43,6 @@ defineProps({
   font-size: 26px;
   font-weight: 750;
   line-height: 1.1;
-}
-
-.stat-card__delta {
-  margin-top: 4px;
-  color: var(--text-tertiary);
-  font-size: 11px;
-}
-
-.stat-card__delta span {
-  color: var(--green-500);
 }
 
 .stat-card__icon {

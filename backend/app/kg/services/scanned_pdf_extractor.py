@@ -10,6 +10,7 @@ import httpx
 from PIL import Image
 
 from app.core.config import settings
+from app.core.model_router import resolve_model
 
 HERITAGE_PAGE_PROMPT = """你是文物遗产与历史文献数字化助手。
 
@@ -29,6 +30,22 @@ SYSTEM_PROMPT = "你是文献数字化助手。只输出原文 Markdown，不要
 
 
 def load_vision_config() -> dict[str, str]:
+    """读取扫描件 OCR 的视觉模型配置。
+
+    优先使用模型路由 ``vision.ocr``；未配置路由时回落到原有 openai_* 配置。
+    """
+    resolved = resolve_model("vision.ocr")
+    if resolved is not None:
+        if not resolved.api_key:
+            raise RuntimeError(
+                f"模型路由 vision.ocr -> '{resolved.alias}' 未配置可用的 API Key。"
+            )
+        return {
+            "base_url": resolved.base_url,
+            "api_key": resolved.api_key,
+            "model": resolved.model,
+        }
+
     api_key = (settings.openai_api_key or os.getenv("LLM_API_KEY") or "").strip()
     if not api_key:
         raise RuntimeError("未配置视觉模型 API Key。请在 .env 中设置 OPENAI_API_KEY 或 LLM_API_KEY。")

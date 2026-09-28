@@ -114,6 +114,10 @@
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
             <AudioTranscribeDialog @saved="handleTranscribeSaved" />
+            <el-button :disabled="!selectedIds.length" :loading="busy" @click="batchProcessSelected">
+              <el-icon><VideoPlay /></el-icon>
+              批量处理
+            </el-button>
             <el-button :disabled="!selectedIds.length" :loading="deleting" @click="deleteSelected">
               <el-icon><Delete /></el-icon>
               批量删除
@@ -339,8 +343,8 @@
                 <dd>{{ formatTime(currentFile.upload_time) }}</dd>
               </div>
               <div class="detail-list__row">
-                <dt>上传者</dt>
-                <dd>admin</dd>
+                <dt>来源</dt>
+                <dd>{{ currentFile.source || '上传' }}</dd>
               </div>
               <div class="detail-list__row">
                 <dt>摘要</dt>
@@ -409,9 +413,11 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
+  batchRunKgProcess,
   createKgFolder,
   deleteKgFile,
   deleteKgFolder,
+  downloadKgFile,
   getKgFolders,
   getKgTextPreview,
   updateKgFile,
@@ -746,6 +752,20 @@ function deleteSelected() {
   return handleDelete(targets)
 }
 
+async function batchProcessSelected() {
+  if (!selectedIds.value.length || busy.value) return
+  busy.value = true
+  try {
+    await batchRunKgProcess(selectedIds.value, 'start')
+    ElMessage.success(`已提交 ${selectedIds.value.length} 个文件的文本解析`)
+    await loadFiles()
+  } catch (error) {
+    ElMessage.error(error?.message || '批量处理失败')
+  } finally {
+    busy.value = false
+  }
+}
+
 async function promptCreateFolder() {
   try {
     const { value } = await ElMessageBox.prompt('请输入分类名称', '新建分类', {
@@ -824,8 +844,25 @@ async function openPreview() {
   }
 }
 
-function handleDownload() {
-  ElMessage.info('该文件暂不支持直接下载，可在处理完成后前往图谱展示查看成果。')
+async function handleDownload() {
+  const file = currentFile.value
+  if (!file) return
+  busy.value = true
+  try {
+    const blob = await downloadKgFile(file.id)
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = file.name || `file_${file.id}`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    ElMessage.error(error?.message || '下载失败，原始文件可能尚未上传')
+  } finally {
+    busy.value = false
+  }
 }
 
 function handleTranscribeSaved() {

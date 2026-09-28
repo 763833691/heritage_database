@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 title Heritage Platform Startup
 cd /d "%~dp0"
 
-set "BACKEND_PORT=8001"
+set "BACKEND_PORT=8010"
 set "FRONTEND_PORT=3000"
 set "ROOT_DIR=%cd%"
 

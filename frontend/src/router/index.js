@@ -14,6 +14,7 @@ const routes = [
     children: [
       { path: '', name: 'Home', component: () => import('@/views/Dashboard.vue'), meta: { title: '首页' } },
       { path: 'research-data', name: 'ResearchData', component: () => import('@/views/ResearchData.vue'), meta: { title: '研究数据' } },
+      { path: 'field-gallery', name: 'FieldGallery', component: () => import('@/views/FieldGallery.vue'), meta: { title: '田野影像总览' } },
       { path: 'parks', name: 'Parks', component: () => import('@/views/Parks.vue'), meta: { title: '遗址公园' } },
       { path: 'parks/:id', name: 'ParkDetail', component: () => import('@/views/ParkDetail.vue'), meta: { title: '公园详情' } },
       { path: 'map', name: 'Map', component: () => import('@/views/MapView.vue'), meta: { title: '地图浏览', flush: true, hideFooter: true } },
@@ -23,6 +24,9 @@ const routes = [
       { path: 'kg/vault', name: 'KgVault', component: () => import('@/views/kg/FileVault.vue'), meta: { title: '文件库', wide: true } },
       { path: 'kg/processing', name: 'KgProcessing', component: () => import('@/views/kg/Processing.vue'), meta: { title: '处理流程', wide: true } },
       { path: 'kg/processing/:fileId', name: 'KgProcessingFile', component: () => import('@/views/kg/Processing.vue'), meta: { title: '处理流程', wide: true } },
+      { path: 'survey', name: 'SurveyTasks', component: () => import('@/views/survey/SurveyTasks.vue'), meta: { title: '田野调研', wide: true } },
+      { path: 'survey/:id', name: 'SurveyWorkbench', component: () => import('@/views/survey/SurveyWorkbench.vue'), meta: { title: '调研工作台', wide: true } },
+      { path: 'settings/models', name: 'ModelRouting', component: () => import('@/views/settings/ModelRouting.vue'), meta: { title: '模型路由', wide: true } },
       { path: 'assistant', name: 'Assistant', component: () => import('@/views/Chat.vue'), meta: { title: 'AI助手', wide: true, hideFooter: true } },
       { path: 'chat', redirect: '/assistant' },
       { path: 'library', name: 'Library', component: () => import('@/views/KnowledgeBase.vue'), meta: { title: '知识库' } },

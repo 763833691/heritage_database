@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query, UploadFile
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 
 from app.kg.response import ok
 from app.kg.schemas import CreateFileTaskRequest, CreateFolderRequest, UpdateFileRequest, UpdateFolderRequest
@@ -60,6 +63,16 @@ async def delete_folder(folder_id: str):
 async def get_file(file_id: str):
     item = await file_service.get_file(file_id)
     return ok({"file": item.model_dump(mode="json")})
+
+
+@router.get("/{file_id}/download")
+async def download_file(file_id: str):
+    """下载文件库中的原始文件（尚未上传原始文件时返回 404）。"""
+    item = await file_service.get_file(file_id)
+    path = item.content_path
+    if not path or not Path(path).exists():
+        raise HTTPException(status_code=404, detail="原始文件不存在或尚未上传")
+    return FileResponse(path, filename=item.name)
 
 
 @router.patch("/{file_id}")

@@ -8,6 +8,8 @@ from ..models.park import Park
 from ..models.site import Site
 from ..models.score import Score
 from ..models.indicator import Indicator
+from ..models.survey import SurveyEvent, SurveyTask
+from ..models.track import TrackFile, TrackPhoto
 from ..models.user import User
 
 router = APIRouter()
@@ -45,6 +47,20 @@ async def overview(
         .all()
     )
 
+    # 田野调研覆盖（KML 轨迹 / 照片 / 调研事件）
+    total_tracks = db.query(TrackFile).count()
+    total_track_photos = db.query(TrackPhoto).count()
+    total_survey_events = db.query(SurveyEvent).count()
+    survey_park_count = (
+        db.query(func.count(func.distinct(SurveyTask.park_id)))
+        .filter(SurveyTask.park_id.isnot(None))
+        .scalar()
+        or 0
+    )
+    track_distance_meters = (
+        db.query(func.coalesce(func.sum(TrackFile.distance_meters), 0.0)).scalar() or 0.0
+    )
+
     return {
         "total_parks": total_parks,
         "total_sites": total_sites,
@@ -52,6 +68,13 @@ async def overview(
         "by_type": {t: c for t, c in type_stats},
         "by_province": {p: c for p, c in province_stats},
         "by_batch": {b: c for b, c in batch_stats},
+        "field_research": {
+            "track_count": total_tracks,
+            "photo_count": total_track_photos,
+            "event_count": total_survey_events,
+            "park_count": survey_park_count,
+            "track_distance_km": round(float(track_distance_meters) / 1000, 2),
+        },
     }
 
 
@@ -98,6 +121,64 @@ async def comparison(
         })
 
     return result
+
+
+@router.get("/score-matrix")
+async def score_matrix(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """公园 × D1–D27 标准化评分矩阵（一次性返回，供前端热力图使用）。"""
+    parks = db.query(Park).order_by(Park.id).all()
+    indicators = db.query(Indicator).order_by(Indicator.id).all()
+    rows = (
+        db.query(Score, Indicator)
+        .join(Indicator, Score.indicator_id == Indicator.id)
+        .all()
+    )
+
+    cell_map: dict[tuple[int, int], dict] = {}
+    for score, indicator in rows:
+        cell_map[(score.park_id, indicator.id)] = {
+            "score": score.normalized_score,
+            "grade": score.grade,
+            "raw_value": score.raw_value,
+            "evidence": score.evidence,
+            "data_year": score.data_year,
+        }
+
+    cells = [
+        {"park_id": park.id, "indicator_id": indicator.id, **cell_map[(park.id, indicator.id)]}
+        for park in parks
+        for indicator in indicators
+        if (park.id, indicator.id) in cell_map
+    ]
+
+    dimensions: list[dict] = []
+    for indicator in indicators:
+        group = next((item for item in dimensions if item["dimension"] == indicator.dimension), None)
+        if group is None:
+            group = {"dimension": indicator.dimension, "codes": []}
+            dimensions.append(group)
+        group["codes"].append(indicator.code)
+
+    return {
+        "parks": [
+            {
+                "park_id": park.id,
+                "park_name": park.short_name or park.name,
+                "park_type": park.park_type,
+                "province": park.province,
+            }
+            for park in parks
+        ],
+        "indicators": [
+            {"id": indicator.id, "code": indicator.code, "name": indicator.name, "dimension": indicator.dimension}
+            for indicator in indicators
+        ],
+        "dimensions": dimensions,
+        "cells": cells,
+    }
 
 
 @router.get("/dimension")

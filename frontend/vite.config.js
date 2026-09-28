@@ -4,7 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const backendPort = env.VITE_BACKEND_PORT || '8001'
+  const backendPort = env.VITE_BACKEND_PORT || '8010'
   const backendUrl = `http://localhost:${backendPort}`
 
   return {

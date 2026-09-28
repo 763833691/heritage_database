@@ -34,7 +34,7 @@ test.describe('遗址公园研究门户', () => {
   })
 
   test('研究工具和管理页均无全局侧栏', async ({ page }) => {
-    for (const route of ['/research-data', '/parks', '/map', '/compare', '/knowledge-graph', '/assistant', '/library', '/bibliometrics', '/about', '/data-management']) {
+    for (const route of ['/research-data', '/field-gallery', '/parks', '/map', '/compare', '/knowledge-graph', '/assistant', '/library', '/bibliometrics', '/about', '/data-management']) {
       await page.goto(route)
       await expect(page.locator('.portal-header')).toBeVisible()
       await expect(page.locator('.aside')).toHaveCount(0)
@@ -46,15 +46,19 @@ test.describe('遗址公园研究门户', () => {
     await page.goto('/map')
     await expect(page.locator('.portal-nav__item.active')).toHaveText('地图浏览')
     await expect(page.locator('.map-canvas')).toBeVisible()
-    const ready = await page.locator('.amap-container').count()
-    if (!ready) await expect(page.getByText('地图服务暂不可用')).toBeVisible()
+    await expect.poll(async () => {
+      if (await page.locator('.amap-container').count()) return 'ready'
+      if (await page.getByText(/地图服务(暂不可用|加载失败)/).count()) return 'error'
+      return 'loading'
+    }, { timeout: 20000 }).not.toBe('loading')
     if (isMobile) {
-      await page.getByRole('button', { name: /筛选/ }).click()
+      await page.getByRole('button', { name: '筛选', exact: true }).click()
       await expect(page.getByRole('heading', { name: '筛选遗址公园' })).toBeVisible()
     } else {
-      await page.locator('.map-filter-panel').getByRole('button', { name: '城市型', exact: true }).click()
+      await page.locator('.map-side-panel').getByRole('button', { name: '城市型', exact: true }).click()
       await page.getByRole('button', { name: '筛选公园', exact: true }).click()
-      await expect(page.locator('.map-result-hint').getByText(/3/).first()).toBeVisible()
+      await expect(page.locator('.map-side-panel').getByText(/公园列表/)).toBeVisible()
+      await expect(page.locator('.map-side-panel .map-park-card').first()).toBeVisible()
     }
   })
 
@@ -64,6 +68,57 @@ test.describe('遗址公园研究门户', () => {
     await expect(page.locator('.compare-main-grid canvas')).toHaveCount(2)
     await page.getByText('数据表格', { exact: true }).click()
     await expect(page.locator('.compare-table tbody tr')).toHaveCount(3)
+  })
+
+  test('田野影像总览展示全部真实照片', async ({ page }) => {
+    await page.goto('/field-gallery')
+    await expect(page.locator('.portal-nav__item.active')).toHaveText('田野影像')
+    await expect(page.getByText('1,028').first()).toBeVisible()
+    await expect(page.locator('.fg-wall-item').first()).toBeVisible()
+    await expect(page.locator('.fg-wall-item')).toHaveCount(24)
+    await expect(page.getByText('9').first()).toBeVisible()
+  })
+
+  test('研究数据热力图与公园调研记录真实可用', async ({ page }) => {
+    await page.goto('/research-data')
+    await expect(page.getByText('田野调研覆盖')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '公园 × 指标评分热力图' })).toBeVisible()
+    await expect(page.locator('.coverage-grid .portal-stat-card')).toHaveCount(5)
+    await page.goto('/parks/7')
+    await expect(page.getByRole('heading', { name: '调研记录' })).toBeVisible()
+    await expect(page.locator('.survey-task-list article').first()).toBeVisible()
+    await expect(page.getByRole('button', { name: /导出 Excel/ }).first()).toBeVisible()
+  })
+
+  test('全站搜索分组展示公园与文献', async ({ page, isMobile }) => {
+    test.skip(isMobile, '移动端头部隐藏搜索入口，仅验证桌面端')
+    await page.goto('/')
+    await page.getByRole('button', { name: '打开全站搜索' }).click()
+    await page.getByPlaceholder('搜索遗址公园、文献或指标').fill('圆明园')
+    await page.getByRole('button', { name: '搜索', exact: true }).click()
+    await expect(page.locator('.global-search-results h4').first()).toBeVisible()
+    await page.locator('.global-search-results section').first().locator('button').first().click()
+    await expect(page).toHaveURL(/\/parks\/\d+/)
+  })
+
+  test('知识库排序按钮可切换', async ({ page }) => {
+    await page.goto('/library')
+    await expect(page.locator('.kb-results-bar button.active')).toHaveText('相关性')
+    await page.getByRole('button', { name: '被引量' }).click()
+    await expect(page.locator('.kb-results-bar button.active')).toHaveText('被引量')
+  })
+
+  test('知识库可查看结构化综述数据', async ({ page }) => {
+    await page.goto('/library')
+    await page.getByRole('button', { name: /查看综述数据/ }).click()
+    await expect(page.getByText('文献综述结构化数据')).toBeVisible()
+    await expect(page.getByText('高频关键词')).toBeVisible()
+  })
+
+  test('处理流程不再展示编造的统计', async ({ page }) => {
+    await page.goto('/kg/processing')
+    await expect(page.getByText('文本覆盖率')).toHaveCount(0)
+    await expect(page.getByText('较上次')).toHaveCount(0)
   })
 
   test('知识库搜索和 AI 输入框可用', async ({ page }) => {

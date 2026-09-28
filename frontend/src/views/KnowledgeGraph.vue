@@ -305,11 +305,11 @@ const clusterBounds = computed(() => {
   return computeClusterBounds(positionedGraph.value.nodes, sourceClusters.value)
 })
 
-/** 详情面板展示的节点：优先当前选中，否则回落到最相关的节点。 */
+/** 详情面板展示的节点：优先当前选中，否则回落到当前图中的第一个节点。 */
 const detailNode = computed(() => {
   if (selectedNode.value) return selectedNode.value
   const nodes = positionedGraph.value?.nodes || []
-  return nodes.find((node) => node.label === '大明宫') || nodes[0] || null
+  return nodes[0] || null
 })
 
 /** 当前可见节点的外接球，用于把镜头收到合适距离。 */

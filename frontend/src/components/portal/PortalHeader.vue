@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <el-dialog v-model="searchOpen" class="global-search-dialog" title="全站搜索" width="min(640px, 92vw)" append-to-body>
+    <el-dialog v-model="searchOpen" class="global-search-dialog" title="全站搜索" width="min(640px, 92vw)" append-to-body @closed="resetSearch">
       <el-input
         v-model="searchText"
         size="large"
@@ -63,10 +63,30 @@
         @keyup.enter="submitSearch"
       >
         <template #prefix><el-icon><Search /></el-icon></template>
-        <template #append><el-button @click="submitSearch">搜索</el-button></template>
+        <template #append><el-button :loading="searching" @click="submitSearch">搜索</el-button></template>
       </el-input>
       <div class="global-search-dialog__hints">
         <button v-for="term in searchSuggestions" :key="term" type="button" @click="searchText = term; submitSearch()">{{ term }}</button>
+      </div>
+
+      <div v-if="searching" class="global-search-status">正在检索遗址公园与文献…</div>
+      <div v-else-if="searchError" class="global-search-status global-search-status--error">{{ searchError }}</div>
+      <div v-else-if="searched" class="global-search-results">
+        <section v-if="parkResults.length">
+          <h4>遗址公园（{{ parkResults.length }}）</h4>
+          <button v-for="park in parkResults" :key="park.id" type="button" @click="goPark(park)">
+            <strong>{{ park.short_name || park.name }}</strong>
+            <small>{{ park.province }} {{ park.city }} · {{ park.park_type || '类型未录入' }}</small>
+          </button>
+        </section>
+        <section v-if="litResults.length">
+          <h4>文献（{{ litResults.length }}）</h4>
+          <button v-for="lit in litResults" :key="lit.id" type="button" @click="goLiterature(lit)">
+            <strong>{{ lit.title }}</strong>
+            <small>{{ lit.year || '年份未知' }} · {{ lit.journal || '来源未录入' }}</small>
+          </button>
+        </section>
+        <p v-if="!parkResults.length && !litResults.length" class="global-search-status">未找到与“{{ lastKeyword }}”相关的结果。</p>
       </div>
     </el-dialog>
 
@@ -98,6 +118,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import api from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
 import { AUTH_ENABLED } from '@/config/app'
 import { portalNavigation, isNavigationActive } from '@/config/navigation'
@@ -109,12 +130,55 @@ const searchOpen = ref(false)
 const mobileOpen = ref(false)
 const searchText = ref('')
 const searchSuggestions = ['圆明园', '保护利用', '文化传播', '大明宫']
+const searching = ref(false)
+const searched = ref(false)
+const searchError = ref('')
+const lastKeyword = ref('')
+const parkResults = ref([])
+const litResults = ref([])
 
-function submitSearch() {
+async function submitSearch() {
   const keyword = searchText.value.trim()
   if (!keyword) return
+  searching.value = true
+  searched.value = true
+  searchError.value = ''
+  lastKeyword.value = keyword
+  try {
+    const [parkRes, litRes] = await Promise.allSettled([
+      api.get('/parks', { params: { keyword, page_size: 5 }, silent: true }),
+      api.get('/knowledge/search', { params: { q: keyword, limit: 6 }, silent: true }),
+    ])
+    parkResults.value = parkRes.status === 'fulfilled' ? (parkRes.value.data.items || []) : []
+    litResults.value = litRes.status === 'fulfilled' ? (litRes.value.data.results || []) : []
+    if (parkRes.status === 'rejected' && litRes.status === 'rejected') {
+      searchError.value = '搜索服务暂不可用，请稍后重试。'
+    }
+  } catch (error) {
+    searchError.value = error.response?.data?.detail || '搜索失败，请稍后重试。'
+    parkResults.value = []
+    litResults.value = []
+  } finally {
+    searching.value = false
+  }
+}
+
+function resetSearch() {
+  searched.value = false
+  searchError.value = ''
+  lastKeyword.value = ''
+  parkResults.value = []
+  litResults.value = []
+}
+
+function goPark(park) {
   searchOpen.value = false
-  router.push({ path: '/parks', query: { keyword } })
+  router.push(`/parks/${park.id}`)
+}
+
+function goLiterature(lit) {
+  searchOpen.value = false
+  router.push({ path: '/library', query: { lit: lit.id } })
 }
 
 function handleCommand(command) {
@@ -231,6 +295,15 @@ function handleCommand(command) {
 <style lang="scss">
 .global-search-dialog__hints { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 .global-search-dialog__hints button { border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-secondary); padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+.global-search-status { margin-top: 16px; color: var(--text-secondary); font-size: 13px; }
+.global-search-status--error { color: #dc2626; }
+.global-search-results { margin-top: 18px; display: grid; gap: 16px; max-height: 52vh; overflow-y: auto; }
+.global-search-results h4 { margin: 0 0 8px; color: var(--text-tertiary); font-size: 12px; font-weight: 600; }
+.global-search-results section { display: grid; gap: 6px; }
+.global-search-results button { display: grid; gap: 3px; padding: 11px 13px; text-align: left; border: 1px solid var(--border); border-radius: 11px; background: #fff; cursor: pointer; transition: border-color .2s ease; }
+.global-search-results button:hover { border-color: var(--brand-200); background: var(--brand-50); }
+.global-search-results button strong { color: var(--text-primary); font-size: 13px; }
+.global-search-results button small { color: var(--text-tertiary); font-size: 11px; }
 .mobile-nav-title { display: flex; align-items: center; gap: 10px; color: var(--text-primary); }
 .mobile-nav { display: grid; gap: 6px; }
 .mobile-nav a { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px; color: var(--text-primary); text-decoration: none; border-radius: 12px; }

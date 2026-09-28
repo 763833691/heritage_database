@@ -6,21 +6,62 @@ from sqlalchemy import text
 from .core.config import settings
 from .core.database import engine, Base
 from .api import api_router
+from . import models  # noqa: F401 - 注册全部模型，便于启动时补齐缺失表
 from .kg.services.file_service import file_service
 from .kg.services.graph_repository import graph_repository
 from .kg.services.job_recovery import recover_interrupted_work
+from .services.track_service import recover_interrupted_tracks
+from .services.report_service import recover_interrupted_reports
+from .core.model_router import describe_routes, validate_routes
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    # 注意：数据库表创建由 scripts/init_db.py 负责
+    # scripts/init_db.py 负责初始数据；启动时补齐缺失表（create_all 幂等，不改动既有表）
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        print("[OK] Database connection verified")
+        Base.metadata.create_all(bind=engine)
+        print("[OK] Database connection verified (schema ensured)")
     except Exception as e:
         print(f"[WARN] Database connection failed: {e}")
+
+    # 田野调研：恢复因服务重启而中断的轨迹处理与报告生成
+    try:
+        stale_tracks = recover_interrupted_tracks()
+        stale_reports = recover_interrupted_reports()
+        if stale_tracks or stale_reports:
+            print(f"[INFO] Recovered interrupted survey work: {stale_tracks} tracks, {stale_reports} reports")
+    except Exception as e:
+        print(f"[WARN] Survey recovery failed: {e}")
+
+    # AI 模型路由：播种预置模型，并输出解析结果与配置问题
+    try:
+        if settings.AI_MODEL_SEED_PRESETS:
+            from .core.database import SessionLocal
+            from .services.ai_model_service import seed_presets
+
+            db = SessionLocal()
+            try:
+                created = seed_presets(db)
+                if created:
+                    print(f"[INFO] Seeded {created} preset AI models")
+            finally:
+                db.close()
+
+        for issue in validate_routes():
+            print(f"[WARN] Model route: {issue}")
+        for route in describe_routes():
+            if route["error"]:
+                print(f"[WARN] Model route {route['task']}: {route['error']}")
+            elif route["alias"]:
+                print(
+                    f"[INFO] Model route {route['task']} -> {route['alias']} "
+                    f"({route['model']} @ {route['base_url']}, source={route['source']})"
+                )
+    except Exception as e:
+        print(f"[WARN] Model route validation failed: {e}")
 
     # 知识图谱子系统：文件库状态、图谱仓库与中断任务恢复
     try:

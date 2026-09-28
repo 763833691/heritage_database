@@ -131,7 +131,6 @@
               :key="card.label"
               :label="card.label"
               :value="card.value"
-              :delta="card.delta"
               :tone="card.tone"
               :icon="card.icon"
             />
@@ -283,22 +282,14 @@ const typeStats = computed(() => {
 })
 
 const statCards = computed(() => [
-  { label: '实体总数', value: entities.value.length, delta: `+${Math.max(0, entities.value.length - 1)}`, tone: 'blue', icon: 'User' },
-  { label: '关系总数', value: relations.value.length, delta: `+${Math.max(0, relations.value.length - 1)}`, tone: 'green', icon: 'Link' },
-  { label: '实体类型', value: Object.values(typeStats.value).filter(Boolean).length, delta: '+1', tone: 'violet', icon: 'Collection' },
-  {
-    label: '文本覆盖率',
-    value: entities.value.length ? `${Math.min(99, 70 + Math.round(entities.value.length / 2))}%` : '0%',
-    delta: '+5%',
-    tone: 'orange',
-    icon: 'TrendCharts',
-  },
+  { label: '实体总数', value: entities.value.length, tone: 'blue', icon: 'User' },
+  { label: '关系总数', value: relations.value.length, tone: 'green', icon: 'Link' },
+  { label: '实体类型', value: Object.values(typeStats.value).filter(Boolean).length, tone: 'violet', icon: 'Collection' },
   {
     label: '平均置信度',
     value: entities.value.length
       ? (entities.value.reduce((sum, entity) => sum + (entity.confidence ?? 0), 0) / entities.value.length).toFixed(2)
       : '0.00',
-    delta: '+0.06',
     tone: 'blue',
     icon: 'TrendCharts',
   },

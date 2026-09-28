@@ -159,13 +159,21 @@ def generate_literature_review(db_session, topic: str = "", max_lits: int = 20) 
                 if m:
                     methods[m] += 1
 
+    # 年份可能缺失（记为“未知”），需分开排序，避免 int 与 str 直接比较报错
+    known_years = sorted(
+        (item for item in by_year.items() if isinstance(item[0], int)),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    unknown_years = [(key, value) for key, value in by_year.items() if not isinstance(key, int)]
+
     return {
         "topic": topic or "全部",
         "total_found": len(lits),
         "years_range": [min(years), max(years)] if years else [],
         "top_keywords": top_kws,
         "methods": [{"name": k, "count": v} for k, v in methods.most_common(10)],
-        "by_year": [{"year": y, "papers": papers} for y, papers in sorted(by_year.items(), reverse=True)],
+        "by_year": [{"year": y, "papers": papers} for y, papers in (known_years + unknown_years)],
         "lits": [
             {
                 "id": l.id,

@@ -237,6 +237,36 @@
         <el-button type="primary" @click="saveScore">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 遗址点编辑弹窗 -->
+    <el-dialog v-model="siteDialogVisible" :title="siteForm.id ? '编辑遗址点' : '新增遗址点'" width="560px">
+      <el-form :model="siteForm" label-width="100px">
+        <el-form-item label="所属公园" required>
+          <el-select v-model="siteForm.park_id" filterable placeholder="选择公园">
+            <el-option v-for="p in parks" :key="p.id" :label="p.short_name || p.name" :value="p.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="名称" required><el-input v-model="siteForm.site_name" /></el-form-item>
+        <el-form-item label="类型"><el-input v-model="siteForm.site_type" placeholder="如 建筑基址/墓葬/窑址" /></el-form-item>
+        <el-form-item label="时期"><el-input v-model="siteForm.period" /></el-form-item>
+        <el-form-item label="面积(㎡)"><el-input-number v-model="siteForm.area" :min="0" :precision="2" /></el-form-item>
+        <el-form-item label="完整性评分">
+          <el-select v-model="siteForm.integrity_score" clearable placeholder="未评分">
+            <el-option v-for="s in [20, 40, 60, 80, 100]" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="安全性评分">
+          <el-select v-model="siteForm.safety_score" clearable placeholder="未评分">
+            <el-option v-for="s in [20, 40, 60, 80, 100]" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="简介"><el-input v-model="siteForm.description" type="textarea" :rows="3" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="siteDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveSite">保存</el-button>
+      </template>
+    </el-dialog>
     </template>
   </div>
 </template>
@@ -268,10 +298,12 @@ const scoreFilterParkId = ref()
 // 弹窗
 const parkDialogVisible = ref(false)
 const scoreDialogVisible = ref(false)
+const siteDialogVisible = ref(false)
 
 // 表单
 const parkForm = ref({})
 const scoreForm = ref({})
+const siteForm = ref({})
 
 // 上传头
 const uploadHeaders = computed(() => ({
@@ -357,9 +389,41 @@ async function deletePark(id) {
 
 // ==================== 遗址点操作 ====================
 
-function showSiteDialog(_row = null) {
-  // 简化处理
-  ElMessage.info('请使用Excel导入遗址点数据')
+function showSiteDialog(row = null) {
+  siteForm.value = row ? { ...row } : {
+    park_id: siteFilterParkId.value || null,
+    site_name: '', site_type: '', period: '',
+    area: null, integrity_score: null, safety_score: null, description: ''
+  }
+  siteDialogVisible.value = true
+}
+
+async function saveSite() {
+  if (!siteForm.value.park_id) {
+    ElMessage.warning('请选择所属公园')
+    return
+  }
+  if (!siteForm.value.site_name || !siteForm.value.site_name.trim()) {
+    ElMessage.warning('请填写遗址点名称')
+    return
+  }
+  try {
+    const payload = { ...siteForm.value, site_name: siteForm.value.site_name.trim() }
+    if (payload.id) {
+      await api.put(`/admin/sites/${payload.id}`, payload)
+    } else {
+      delete payload.id
+      await api.post('/admin/sites', payload)
+    }
+    ElMessage.success('保存成功')
+    siteDialogVisible.value = false
+    if (siteForm.value.park_id) {
+      siteFilterParkId.value = siteForm.value.park_id
+      loadSites()
+    }
+  } catch (e) {
+    ElMessage.error(e.response?.data?.detail || '保存失败')
+  }
 }
 
 async function deleteSite(id) {

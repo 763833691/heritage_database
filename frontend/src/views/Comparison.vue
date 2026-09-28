@@ -1,7 +1,7 @@
 <template>
   <div class="page-shell comparison-page">
     <PageHero title="对比分析" description="支持最多 5 个遗址公园开展多维综合比较，从保护管理、科研价值与公共服务等真实指标中发现差异。" :image="portalHero" compact>
-      <template #actions><el-button plain :disabled="!comparisonData.length" @click="exportNotice"><el-icon><Download /></el-icon> 导出说明</el-button></template>
+      <template #actions><el-button plain :disabled="!comparisonData.length" @click="exportCsv"><el-icon><Download /></el-icon> 导出 CSV</el-button></template>
     </PageHero>
 
     <section class="section-card compare-selector">
@@ -23,7 +23,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import api from '@/utils/api'
 import PageHero from '@/components/portal/PageHero.vue'
@@ -70,7 +69,9 @@ function renderActiveCharts(){
   }
 }
 function resizeActiveCharts(){if(activeTab.value==='dimension'){radarChart?.resize();barChart?.resize()}else if(activeTab.value==='indicator'){indicatorChart?.resize()}}
-function removePark(id){selectedParks.value=selectedParks.value.filter(item=>item!==id);if(selectedParks.value.length<2)comparisonData.value=[]}function focusSelect(){document.querySelector('.compare-selector .el-select__wrapper')?.click()}function exportNotice(){ElMessage.info('当前后端尚未提供对比报告导出接口。')} 
+function removePark(id){selectedParks.value=selectedParks.value.filter(item=>item!==id);if(selectedParks.value.length<2)comparisonData.value=[]}function focusSelect(){document.querySelector('.compare-selector .el-select__wrapper')?.click()}
+function csvCell(value){const text=value==null?'':String(value);return /[",\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text}
+function exportCsv(){if(!tableRows.value.length)return;const header=['遗址公园',...dimensions.value,'综合均值'];const lines=[header,...tableRows.value.map(row=>[row.name,...dimensions.value.map(dim=>row.dimensions[dim]??''),row.average])];const csv=lines.map(cells=>cells.map(csvCell).join(',')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download='对比分析_维度得分.csv';document.body.appendChild(anchor);anchor.click();document.body.removeChild(anchor);URL.revokeObjectURL(url)} 
 </script>
 
 <style scoped lang="scss">

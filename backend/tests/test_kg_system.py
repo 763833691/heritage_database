@@ -106,6 +106,29 @@ def test_file_vault_and_graph_flow():
     assert subgraph["nodes"]
 
 
+def test_file_download_returns_raw_stream():
+    client = build_client()
+    created = unwrap(client.post("/api/file/tasks", json={"doc_code": "KG-DL", "title": "下载测试"}).json())
+    file_id = created["file_id"]
+    payload = "下载测试内容".encode("utf-8")
+    upload = client.post(
+        f"/api/file/{file_id}/upload",
+        files={"file": ("下载测试.txt", payload, "text/plain")},
+    )
+    assert upload.status_code == 200
+
+    response = client.get(f"/api/file/{file_id}/download")
+    assert response.status_code == 200
+    assert response.content == payload
+
+
+def test_file_download_missing_original_returns_404():
+    client = build_client()
+    created = unwrap(client.post("/api/file/tasks", json={"doc_code": "KG-NODL", "title": "无原件"}).json())
+    response = client.get(f"/api/file/{created['file_id']}/download")
+    assert response.status_code == 404
+
+
 def test_system_status_reports_local_storage():
     client = build_client()
     data = unwrap(client.get("/api/system/status").json())

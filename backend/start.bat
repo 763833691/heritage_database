@@ -3,7 +3,7 @@ chcp 65001 >nul 2>nul
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-set "BACKEND_PORT=8001"
+set "BACKEND_PORT=8010"
 set "ROOT_DIR=%~dp0"
 
 set "PYTHON_EXE="
