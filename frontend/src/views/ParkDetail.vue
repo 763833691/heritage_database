@@ -4,7 +4,7 @@
     <StatusState v-else-if="error" type="error" title="公园详情加载失败" :description="error" action-label="返回列表" @action="$router.push('/parks')" />
     <template v-else-if="park">
       <section class="detail-hero section-card">
-        <img :src="parkCover" :alt="`${park.short_name || park.name}主题封面`" />
+        <img :src="park.cover_image || parkCover" :alt="`${park.short_name || park.name}主题封面`" />
         <div class="detail-hero__overlay"></div>
         <div class="detail-hero__content"><button type="button" class="back-button" @click="$router.back()"><el-icon><ArrowLeft /></el-icon>返回</button><div class="detail-hero__tags"><span v-if="park.batch">第{{ park.batch }}批</span><span>{{ park.park_type || '类型未录入' }}</span><span v-if="park.world_heritage">世界遗产</span></div><h1>{{ park.name }}</h1><p><el-icon><Location /></el-icon>{{ park.province }} {{ park.city }} {{ park.district || '' }}</p><div class="detail-hero__actions"><el-button type="primary" @click="openMap">在地图中查看</el-button><el-button plain @click="addToCompare">加入对比</el-button></div></div>
       </section>

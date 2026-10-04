@@ -35,6 +35,12 @@
           <el-table-column prop="province" label="省份" width="80" />
           <el-table-column prop="city" label="城市" width="80" />
           <el-table-column prop="batch" label="批次" width="60" />
+          <el-table-column label="封面" width="90">
+            <template #default="{ row }">
+              <img v-if="row.cover_image" :src="row.cover_image" class="park-thumb" alt="公园封面" />
+              <span v-else class="park-thumb--empty">未上传</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="150">
             <template #default="{ row }">
               <el-button size="small" @click="showParkDialog(row)">编辑</el-button>
@@ -195,6 +201,26 @@
         </el-form-item>
         <el-form-item label="简介">
           <el-input v-model="parkForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="封面图片">
+          <div class="cover-editor">
+            <img v-if="parkForm.cover_image" :src="parkForm.cover_image" class="cover-editor__preview" alt="公园封面预览" />
+            <div v-else class="cover-editor__empty">尚未上传</div>
+            <div class="cover-editor__actions">
+              <el-upload
+                :show-file-list="false"
+                :before-upload="handleCoverUpload"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+              >
+                <el-button :disabled="!parkForm.id">{{ parkForm.cover_image ? '替换封面' : '上传封面' }}</el-button>
+              </el-upload>
+              <el-button v-if="parkForm.cover_image" text type="danger" @click="removeCover">移除</el-button>
+            </div>
+            <p class="cover-editor__hint">支持 JPG / PNG / GIF / WEBP，≤ 10MB；新增公园需先保存再上传。</p>
+          </div>
+        </el-form-item>
+        <el-form-item label="图片说明">
+          <el-input v-model="parkForm.cover_source" placeholder="如：图片来源 / 拍摄者 / 版权说明" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -360,23 +386,60 @@ function showParkDialog(row = null) {
   parkForm.value = row ? { ...row } : {
     name: '', short_name: '', park_type: '', batch: 1,
     province: '', city: '', longitude: null, latitude: null,
-    total_area: null, aaa_level: '', description: ''
+    total_area: null, aaa_level: '', description: '', cover_image: '', cover_source: ''
   }
   parkDialogVisible.value = true
 }
 
 async function savePark() {
   try {
-    if (parkForm.value.id) {
-      await api.put(`/admin/parks/${parkForm.value.id}`, parkForm.value)
+    // 封面走独立上传接口，避免把展示用 URL 写回数据库字段
+    const payload = { ...parkForm.value }
+    delete payload.cover_image
+    if (payload.id) {
+      await api.put(`/admin/parks/${payload.id}`, payload)
     } else {
-      await api.post('/admin/parks', parkForm.value)
+      await api.post('/admin/parks', payload)
     }
     ElMessage.success('保存成功')
     parkDialogVisible.value = false
     loadParks()
   } catch (e) {
     ElMessage.error(e.response?.data?.detail || '保存失败')
+  }
+}
+
+async function handleCoverUpload(file) {
+  if (!parkForm.value.id) {
+    ElMessage.warning('请先保存公园后再上传封面')
+    return false
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.error('图片不能超过 10MB')
+    return false
+  }
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await api.post(`/admin/parks/${parkForm.value.id}/cover`, form)
+    parkForm.value.cover_image = res.data.cover_image
+    ElMessage.success('封面上传成功')
+    loadParks()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.detail || '上传失败')
+  }
+  return false
+}
+
+async function removeCover() {
+  if (!parkForm.value.id) return
+  try {
+    await api.delete(`/admin/parks/${parkForm.value.id}/cover`)
+    parkForm.value.cover_image = ''
+    ElMessage.success('封面已移除')
+    loadParks()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.detail || '移除失败')
   }
 }
 
@@ -516,6 +579,14 @@ function handleImportSuccess(res) {
 }
 
 .toolbar a { text-decoration: none; }
+
+.park-thumb { width: 56px; height: 40px; object-fit: cover; border-radius: 6px; display: block; }
+.park-thumb--empty { color: var(--text-tertiary); font-size: 11px; }
+.cover-editor { display: grid; gap: 10px; }
+.cover-editor__preview { width: 220px; max-height: 140px; object-fit: cover; border: 1px solid var(--border); border-radius: 10px; display: block; }
+.cover-editor__empty { width: 220px; height: 120px; display: grid; place-items: center; border: 1px dashed var(--border-strong); border-radius: 10px; color: var(--text-tertiary); font-size: 12px; }
+.cover-editor__actions { display: flex; align-items: center; gap: 8px; }
+.cover-editor__hint { margin: 0; color: var(--text-tertiary); font-size: 11px; }
 
 @media (max-width: 760px) {
   .admin-tabs-card { padding-inline: 12px; }

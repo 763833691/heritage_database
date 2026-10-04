@@ -1,7 +1,11 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
+from ..core.config import settings
 from ..core.database import get_db
 from ..core.auth import get_current_user
 from ..models.park import Park
@@ -10,6 +14,24 @@ from ..models.indicator import Indicator
 from ..schemas.park import ParkResponse, ParkListResponse, ScoreInfo
 
 router = APIRouter()
+
+
+def park_cover_path(park: Park) -> Optional[Path]:
+    """解析公园封面文件路径；未设置或文件缺失返回 None。"""
+    if not park.cover_image:
+        return None
+    path = Path(park.cover_image)
+    if not path.is_absolute():
+        path = settings.park_cover_dir / path
+    return path if path.exists() else None
+
+
+def park_cover_url(park: Park) -> Optional[str]:
+    """对外暴露的封面 URL；带版本参数避免替换后浏览器缓存旧图。"""
+    if park_cover_path(park) is None:
+        return None
+    version = int(park.updated_at.timestamp()) if park.updated_at else 0
+    return f"/api/parks/{park.id}/cover?v={version}"
 
 
 def build_park_response(park, db):
@@ -48,6 +70,8 @@ def build_park_response(park, db):
         aaa_level=park.aaa_level,
         open_year=park.open_year,
         description=park.description,
+        cover_image=park_cover_url(park),
+        cover_source=park.cover_source,
         scores=score_list,
     )
 
@@ -89,6 +113,17 @@ async def get_park(park_id: int, db: Session = Depends(get_db)):
     if not park:
         raise HTTPException(status_code=404, detail="遗址公园不存在")
     return build_park_response(park, db)
+
+
+@router.get("/{park_id}/cover")
+async def get_park_cover(park_id: int, db: Session = Depends(get_db)):
+    park = db.query(Park).filter(Park.id == park_id).first()
+    if not park:
+        raise HTTPException(status_code=404, detail="遗址公园不存在")
+    path = park_cover_path(park)
+    if path is None:
+        raise HTTPException(status_code=404, detail="该公园尚未上传封面图片")
+    return FileResponse(path, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/{park_id}/sites")

@@ -65,6 +65,8 @@ class ParkResponse(BaseModel):
     aaa_level: Optional[str]
     open_year: Optional[int]
     description: Optional[str]
+    cover_image: Optional[str] = None
+    cover_source: Optional[str] = None
     scores: List[ScoreInfo] = []
 
     class Config:

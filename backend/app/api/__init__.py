@@ -7,6 +7,7 @@ from .admin import router as admin_router
 from .knowledge import router as knowledge_router
 from .track import router as track_router
 from .survey import router as survey_router
+from .annotate import router as annotate_router
 from .ai_models import router as ai_models_router
 from ..kg.api import kg_router
 
@@ -19,5 +20,6 @@ api_router.include_router(admin_router, prefix="/admin", tags=["数据管理"])
 api_router.include_router(knowledge_router, prefix="/knowledge", tags=["知识库"])
 api_router.include_router(track_router, prefix="/track", tags=["轨迹照片"])
 api_router.include_router(survey_router, prefix="/survey", tags=["田野调研"])
+api_router.include_router(annotate_router, prefix="/annotate", tags=["数据标注"])
 api_router.include_router(ai_models_router, prefix="/ai", tags=["模型路由"])
 api_router.include_router(kg_router, tags=["知识图谱系统"])

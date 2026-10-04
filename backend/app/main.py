@@ -15,6 +15,24 @@ from .services.report_service import recover_interrupted_reports
 from .core.model_router import describe_routes, validate_routes
 
 
+def _ensure_new_columns() -> None:
+    """SQLite 轻量迁移：create_all 不会给既有表补列，这里按需 ALTER（幂等）。"""
+    if engine.dialect.name != "sqlite":
+        return
+    migrations = {
+        "parks": {
+            "cover_image": "VARCHAR(300)",
+            "cover_source": "VARCHAR(200)",
+        },
+    }
+    with engine.begin() as conn:
+        for table, columns in migrations.items():
+            existing = {row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table})")}
+            for name, ddl in columns.items():
+                if existing and name not in existing:
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
@@ -23,6 +41,7 @@ async def lifespan(app: FastAPI):
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         Base.metadata.create_all(bind=engine)
+        _ensure_new_columns()
         print("[OK] Database connection verified (schema ensured)")
     except Exception as e:
         print(f"[WARN] Database connection failed: {e}")

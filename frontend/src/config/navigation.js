@@ -9,6 +9,7 @@ export const portalNavigation = [
   { label: '文件库', path: '/kg/vault', match: ['/kg/vault'] },
   { label: '处理流程', path: '/kg/processing', match: ['/kg/processing'] },
   { label: '田野调研', path: '/survey', match: ['/survey'] },
+  { label: '数据标注', path: '/annotate', match: ['/annotate'] },
   { label: '模型路由', path: '/settings/models', match: ['/settings/models'] },
   { label: 'AI助手', path: '/assistant', match: ['/assistant', '/chat'] },
   { label: '知识库', path: '/library', match: ['/library', '/knowledge-base'] },

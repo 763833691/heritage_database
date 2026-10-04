@@ -108,6 +108,15 @@ test.describe('遗址公园研究门户', () => {
     await expect(page.locator('.kb-results-bar button.active')).toHaveText('被引量')
   })
 
+  test('数据管理提供公园封面上传入口', async ({ page }) => {
+    await page.goto('/data-management')
+    await expect(page.getByRole('columnheader', { name: '封面' })).toBeVisible()
+    await expect(page.getByText('未上传').first()).toBeVisible()
+    await page.getByRole('button', { name: '编辑' }).first().click()
+    await expect(page.getByText('封面图片')).toBeVisible()
+    await expect(page.getByRole('button', { name: '上传封面' }).first()).toBeVisible()
+  })
+
   test('知识库可查看结构化综述数据', async ({ page }) => {
     await page.goto('/library')
     await page.getByRole('button', { name: /查看综述数据/ }).click()

@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pathlib import Path
 import pandas as pd
 import io
 
+from ..core.config import settings
 from ..core.database import get_db
 from ..core.auth import get_admin_user
 from ..models.user import User
@@ -34,6 +36,8 @@ async def admin_list_parks(
             "id": p.id, "name": p.name, "short_name": p.short_name,
             "park_type": p.park_type, "batch": p.batch,
             "province": p.province, "city": p.city,
+            "cover_image": f"/api/parks/{p.id}/cover" if p.cover_image else None,
+            "cover_source": p.cover_source,
         }
         for p in parks
     ]
@@ -105,6 +109,76 @@ async def delete_park(
     db.delete(park)
     db.commit()
     return {"message": "删除成功"}
+
+
+def _sniff_image_ext(data: bytes) -> Optional[str]:
+    """按文件头识别图片类型，避免仅凭扩展名误判。"""
+    if data[:3] == b"\xff\xd8\xff":
+        return ".jpg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return ".png"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return ".gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp"
+    return None
+
+
+@router.post("/parks/{park_id}/cover")
+async def upload_park_cover(
+    park_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
+):
+    """上传/替换公园封面图片（JPG/PNG/GIF/WEBP，默认上限 10MB）。"""
+    park = db.query(Park).filter(Park.id == park_id).first()
+    if not park:
+        raise HTTPException(404, "遗址公园不存在")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "上传文件为空")
+    if len(data) > settings.park_cover_max_size:
+        raise HTTPException(400, f"图片不能超过 {settings.PARK_COVER_MAX_MB}MB")
+
+    ext = _sniff_image_ext(data)
+    if ext is None:
+        raise HTTPException(400, "仅支持 JPG / PNG / GIF / WEBP 图片")
+
+    target_dir = settings.park_cover_dir / str(park_id)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for old in target_dir.glob("cover.*"):
+        old.unlink()
+
+    filename = f"cover{ext}"
+    (target_dir / filename).write_bytes(data)
+
+    park.cover_image = f"{park_id}/{filename}"
+    db.commit()
+    db.refresh(park)
+    return {
+        "message": "封面上传成功",
+        "cover_image": f"/api/parks/{park_id}/cover?v={int(park.updated_at.timestamp()) if park.updated_at else 0}",
+    }
+
+
+@router.delete("/parks/{park_id}/cover")
+async def delete_park_cover(
+    park_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
+):
+    park = db.query(Park).filter(Park.id == park_id).first()
+    if not park:
+        raise HTTPException(404, "遗址公园不存在")
+    target_dir = settings.park_cover_dir / str(park_id)
+    if target_dir.exists():
+        for old in target_dir.glob("cover.*"):
+            old.unlink()
+    park.cover_image = None
+    db.commit()
+    return {"message": "封面已移除"}
 
 
 # ==================== 遗址点管理 ====================

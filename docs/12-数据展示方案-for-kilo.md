@@ -186,3 +186,23 @@
 - 前端导出封装全部有调用点（`kgApi/aiModelApi/surveyApi` 逐一核对，无 0 使用导出）。
 
 **测试结果**：后端 **59 passed**（新增年份缺失回归用例 `tests/test_kb_review.py`）；前端 `lint`/`typecheck`/`build` 均通过；`npx playwright test` → **23 passed, 1 skipped**。
+
+### 追加：公园封面图片管理（完成于 2026-09-28，用户确认「后台上逐一上传」）
+
+**问题**：`Park` 无图片字段，`Parks.vue`/`ParkDetail.vue` 全部硬引用同一张 `park-cover-fallback.webp`，15 个公园外观相同。
+
+**改动文件**
+
+- 后端 `models/park.py`：新增 `cover_image`（相对路径）与 `cover_source`（图片说明）。
+- 后端 `core/config.py`：新增 `PARK_COVER_DIR=./data/parks`、`PARK_COVER_MAX_MB=10` 及 `park_cover_dir`/`park_cover_max_size` 属性。
+- 后端 `schemas/park.py`：`ParkResponse` 增加 `cover_image`（对外 URL）与 `cover_source`。
+- 后端 `api/parks.py`：公园列表/详情返回封面 URL（带 `?v=updated_at` 防缓存）；新增公开 `GET /api/parks/{park_id}/cover` 返回图片流。
+- 后端 `api/admin.py`：公园列表返回封面；新增 `POST /api/admin/parks/{park_id}/cover`（按文件头校验 JPG/PNG/GIF/WEBP、≤10MB，替换旧图）与 `DELETE /api/admin/parks/{park_id}/cover`。
+- 后端 `main.py`：SQLite 启动轻量迁移，为既有 `parks` 表补 `cover_image`/`cover_source` 列（幂等）。
+- 后端 `tests/test_park_cover.py`：上传→公开读取→列表字段→删除，以及非图片拒绝。
+- 前端 `Parks.vue`、`ParkDetail.vue`：封面优先 `park.cover_image`，无图回退占位图。
+- 前端 `admin/DataManage.vue`：公园表格新增「封面」列；编辑弹窗新增封面预览/上传/移除与「图片说明」（保存时剔除展示用 URL，封面走独立接口）。
+
+**自测（真实服务 8010）**：上传 → `GET /api/parks/1/cover` 200 且字节一致 → `DELETE` → 再取 404；数据库已补齐两列。
+
+**测试结果**：后端 `pytest -q` → **61 passed**；前端 `lint`/`typecheck`/`build` 通过；`npx playwright test` → **25 passed, 1 skipped**。

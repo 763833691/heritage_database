@@ -12,6 +12,7 @@ from .review import Review
 from .education import EducationActivity
 from .community import Community
 from .literature import Literature, Citation, LitRelation
+from .annotation import AnnotationTask, AnnotationItem, AnnotationRecord
 
 __all__ = [
     "User",
@@ -36,4 +37,7 @@ __all__ = [
     "Literature",
     "Citation",
     "LitRelation",
+    "AnnotationTask",
+    "AnnotationItem",
+    "AnnotationRecord",
 ]

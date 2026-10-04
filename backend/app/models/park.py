@@ -39,6 +39,9 @@ class Park(Base):
     # 其他
     official_url = Column(String(200))
     description = Column(Text)
+    # 封面图片在公园目录下的相对路径，如 "7/cover.jpg"；为空时前端回退占位图
+    cover_image = Column(String(300), comment="封面图片相对路径")
+    cover_source = Column(String(200), comment="封面图片来源/版权说明")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

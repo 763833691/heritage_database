@@ -17,7 +17,7 @@
     </section>
 
     <section v-if="featured" class="featured-park section-card">
-      <div class="featured-park__image"><img :src="parkCover" :alt="`${featured.short_name || featured.name}主题封面`" /><span>当前数据推荐</span></div>
+      <div class="featured-park__image"><img :src="featured.cover_image || parkCover" :alt="`${featured.short_name || featured.name}主题封面`" /><span>当前数据推荐</span></div>
       <div class="featured-park__content"><span class="eyebrow">FEATURED HERITAGE PARK</span><h2>{{ featured.short_name || featured.name }}</h2><p class="featured-park__meta"><el-icon><Location /></el-icon>{{ featured.province }} {{ featured.city }}<i></i>第{{ featured.batch || '—' }}批<i></i>{{ featured.park_type || '类型未录入' }}</p><p>{{ featured.description || '当前公园尚未录入简介，可进入详情查看已有指标和基础信息。' }}</p><el-button type="primary" plain @click="goDetail(featured.id)">查看详情 <el-icon><ArrowRight /></el-icon></el-button></div>
       <div class="featured-park__scores"><div class="featured-score"><span>综合均分</span><strong>{{ averageScore(featured) }}</strong><small>按已录入评价指标计算</small></div><div v-for="score in featured.scores?.slice(0, 4)" :key="score.indicator_code" class="score-line"><div><span>{{ score.indicator_name }}</span><strong>{{ score.score ?? '—' }}</strong></div><el-progress :percentage="score.score || 0" :show-text="false" :stroke-width="6" /></div></div>
     </section>
@@ -29,7 +29,7 @@
       <StatusState v-else-if="!sortedParks.length" type="empty" title="未找到符合条件的公园" description="可以清空筛选条件后重新查询。" action-label="清空筛选" @action="resetFilters" />
       <div v-else :class="['park-grid', { 'park-grid--list': viewMode === 'list' }]">
         <article v-for="park in sortedParks" :key="park.id" class="park-card">
-          <button class="park-card__image" type="button" @click="goDetail(park.id)"><img :src="parkCover" :alt="`${park.short_name || park.name}主题封面`" loading="lazy"/><span v-if="park.batch">第{{ park.batch }}批</span></button>
+          <button class="park-card__image" type="button" @click="goDetail(park.id)"><img :src="park.cover_image || parkCover" :alt="`${park.short_name || park.name}主题封面`" loading="lazy"/><span v-if="park.batch">第{{ park.batch }}批</span></button>
           <div class="park-card__body"><div class="park-card__heading"><div><h3>{{ park.short_name || park.name }}</h3><p><el-icon><Location /></el-icon>{{ park.province }} {{ park.city }}</p></div><strong>{{ averageScore(park) }}</strong></div><div class="park-card__tags"><span>{{ park.park_type || '类型未录入' }}</span><span v-if="park.world_heritage">世界遗产</span><span v-if="park.aaa_level">{{ park.aaa_level }}级景区</span></div><div v-if="park.scores?.length" class="park-card__metrics"><div v-for="score in park.scores.slice(0, 4)" :key="score.indicator_code"><span>{{ shortMetric(score.indicator_name) }}</span><strong>{{ score.score ?? '—' }}</strong></div></div><p class="park-card__description">{{ park.description || '当前公园暂无简介，已有基础档案与评价指标可供查看。' }}</p><div class="park-card__actions"><el-button type="primary" plain @click="goDetail(park.id)">查看详情</el-button><el-button text @click="addToCompare(park.id)">加入对比</el-button></div></div>
         </article>
       </div>

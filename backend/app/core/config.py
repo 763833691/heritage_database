@@ -85,6 +85,10 @@ class Settings(BaseSettings):
     # 调研报告 docx 输出目录
     SURVEY_REPORT_DIR: str = "./data/survey/reports"
 
+    # ===== 遗址公园封面图片 =====
+    PARK_COVER_DIR: str = "./data/parks"
+    PARK_COVER_MAX_MB: int = 10
+
     # ===== AI 模型路由（按任务分配模型，文本/视觉可分别指定）=====
     # MODEL_REGISTRY: JSON，模型别名 -> {type, base_url, model, api_key 或 api_key_env}
     #   type: text（文本）/ vision（视觉）/ multimodal（两者皆可）
@@ -198,6 +202,16 @@ class Settings(BaseSettings):
     def survey_report_dir(self) -> Path:
         path = Path(self.SURVEY_REPORT_DIR)
         return path if path.is_absolute() else _BACKEND_DIR / path
+
+    @property
+    def park_cover_dir(self) -> Path:
+        """遗址公园封面图片根目录（绝对路径）。"""
+        path = Path(self.PARK_COVER_DIR)
+        return path if path.is_absolute() else _BACKEND_DIR / path
+
+    @property
+    def park_cover_max_size(self) -> int:
+        return self.PARK_COVER_MAX_MB * 1024 * 1024
 
     @property
     def model_registry(self) -> dict:

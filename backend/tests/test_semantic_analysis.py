@@ -27,7 +27,12 @@ from app.core.database import Base, get_db
 from app.models.track import TrackPhoto
 from app.services import track_service
 from app.services.kml_service import parse_kml_bytes
-from app.services.semantic_analysis import classify_text, cluster_photos
+from app.services.semantic_analysis import (
+    build_sequence_analysis,
+    build_spatial_analysis,
+    classify_text,
+    cluster_photos,
+)
 
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 
@@ -299,6 +304,116 @@ def test_analysis_endpoints_and_persistence(api, tmp_path):
     assert body["items"]
     assert body["items"][0]["track_id"] == track_id
     assert body["items"][0]["composition"]
+
+
+def _photo_with_type(seq: int, code: str, shot_time: datetime | None = None) -> TrackPhoto:
+    """构造带运行期语义类型的照片对象（build_sequence_analysis 读取 _semantic_type）。"""
+    photo = TrackPhoto(track_id=1, seq=seq, shot_time=shot_time)
+    photo._semantic_type = code  # noqa: SLF001
+    return photo
+
+
+def test_build_sequence_analysis_counts_and_entropy():
+    base = datetime(2026, 9, 8, 10, 0, 0)
+    photos = [
+        _photo_with_type(0, "A", base),
+        _photo_with_type(1, "A", base + timedelta(minutes=1)),
+        _photo_with_type(2, "C", base + timedelta(minutes=2)),
+        _photo_with_type(3, "C", base + timedelta(minutes=3)),
+        _photo_with_type(4, "A", base + timedelta(minutes=4)),
+        _photo_with_type(5, "A", base + timedelta(minutes=5)),
+    ]
+
+    result = build_sequence_analysis(photos)
+
+    assert result["order"] == ["A", "B", "C", "D", "E", "F", "G"]
+    # 守恒：转移次数 = 照片数 - 1
+    assert sum(sum(row) for row in result["counts"]) == len(photos) - 1
+    assert result["counts"][0][0] == 2      # A→A
+    assert result["counts"][0][2] == 1      # A→C
+    assert result["counts"][2][2] == 1      # C→C
+    assert result["counts"][2][0] == 1      # C→A
+    # 行概率：非零行和为 1，零行为 None（B 从未作为起点）
+    assert sum(result["probs"][0]) == pytest.approx(1, abs=0.01)
+    assert result["probs"][1] is None
+    # 分布 A=4/6, C=2/6 的 Shannon 熵
+    assert result["entropy_bits"] == pytest.approx(0.92, abs=0.01)
+    # 优势路径：prob 为条件概率 P(to|from)，排除自转移
+    transitions = {(item["from"], item["to"]): item["prob"] for item in result["top_transitions"]}
+    assert transitions[("C", "A")] == pytest.approx(0.5, abs=0.001)
+    assert transitions[("A", "C")] == pytest.approx(0.333, abs=0.001)
+
+
+def test_build_sequence_analysis_single_type_zero_entropy():
+    base = datetime(2026, 9, 8, 10, 0, 0)
+    photos = [_photo_with_type(i, "A", base + timedelta(minutes=i)) for i in range(5)]
+
+    result = build_sequence_analysis(photos)
+
+    assert result["entropy_bits"] == 0.0
+    assert result["counts"][0][0] == 4
+    assert result["top_transitions"] == []  # 仅自转移，无优势跨类路径
+
+
+def test_build_spatial_analysis_clustered_points():
+    # 20 个点：4 组各 5 点，组内约 1 m、组间约 500 m → 凸包面域大、实测最近邻极小，强集聚
+    photos = []
+    seq = 0
+    for d_lon, d_lat in ((0.0, 0.0), (0.0052, 0.0), (0.0, 0.0045), (0.0052, 0.0045)):
+        for i in range(5):
+            photos.append(
+                TrackPhoto(
+                    track_id=1,
+                    seq=seq,
+                    longitude=115.9000 + d_lon + i * 0.00001,
+                    latitude=28.7000 + d_lat + i * 0.00001,
+                )
+            )
+            seq += 1
+
+    result = build_spatial_analysis(photos)
+
+    assert result["point_count"] == 20
+    assert result["hull_area_km2"] > 0
+    assert result["mean_nn_distance_m"] is not None and result["mean_nn_distance_m"] < 5
+    assert result["nni"] is not None and 0 < result["nni"] < 0.5
+    assert result["dbscan_clusters"] == 4
+    assert result["noise_ratio"] == 0.0
+
+
+def test_build_spatial_analysis_two_dbscan_groups():
+    # 两组各 4 点，组内间距约 10 m，组间约 1 km
+    photos = []
+    for group, offset in enumerate((0.0, 0.0100)):
+        for i in range(4):
+            photos.append(
+                TrackPhoto(
+                    track_id=1,
+                    seq=group * 4 + i,
+                    longitude=115.9000 + offset + i * 0.0001,
+                    latitude=28.7000 + offset,
+                )
+            )
+
+    result = build_spatial_analysis(photos)
+
+    assert result["dbscan_eps_m"] == 100.0
+    assert result["dbscan_min_samples"] == 3
+    assert result["dbscan_clusters"] == 2
+    assert result["noise_ratio"] == 0.0
+
+
+def test_build_spatial_analysis_too_few_points_returns_null_nni():
+    photos = [
+        TrackPhoto(track_id=1, seq=i, longitude=115.9000 + i * 0.0001, latitude=28.7000)
+        for i in range(3)
+    ]
+
+    result = build_spatial_analysis(photos)
+
+    assert result["nni"] is None   # 点位数 < 4，NNI 不定义
+    assert result["dbscan_clusters"] == 1  # 三点互相在 100 m 内，成一个簇
+    assert result["mean_nn_distance_m"] == pytest.approx(9.8, abs=0.2)  # 相邻点约 9.8 m
 
 
 def test_analysis_requires_photos(api):

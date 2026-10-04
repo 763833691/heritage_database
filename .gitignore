@@ -38,3 +38,11 @@ docker/ssl/
 
 # 日志
 *.log
+
+# 生成物与临时文件
+generated-videos/
+backend/tmp/
+
+# Agent Manager 工作区
+.kilo/worktrees/
+.workbuddy/

@@ -5,7 +5,7 @@ import { resolve } from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const backendPort = env.VITE_BACKEND_PORT || '8010'
-  const backendUrl = `http://localhost:${backendPort}`
+  const backendUrl = `http://127.0.0.1:${backendPort}`
 
   return {
   plugins: [vue()],
@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
     host: '0.0.0.0',
     allowedHosts: ['localhost', '127.0.0.1'],
     proxy: {
